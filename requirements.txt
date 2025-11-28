@@ -1,0 +1,66 @@
+# ============================================
+# Requirements for Empirical Distrust Training
+# ============================================
+
+# PLATFORM NOTE:
+# - Apple Silicon (M1/M2/M3): Install mlx and mlx-lm
+# - Intel Mac/Other: Install torch and transformers only
+#
+# To check your platform: python -c "import platform; print(platform.machine())"
+# - "arm64" = Apple Silicon (can use MLX)
+# - "x86_64" = Intel (use PyTorch)
+
+# -----------------------------------------
+# Core ML Framework (choose based on platform)
+# -----------------------------------------
+
+# For Apple Silicon ONLY (comment out if on Intel):
+mlx
+mlx-lm
+
+# For Intel Mac or cross-platform (always works):
+torch>=2.0.0
+transformers>=4.36.0
+
+# -----------------------------------------
+# Model and tokenization
+# -----------------------------------------
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+tokenizers>=0.15.0
+
+# -----------------------------------------
+# Data processing
+# -----------------------------------------
+datasets>=2.14.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# -----------------------------------------
+# HuggingFace integration
+# -----------------------------------------
+huggingface-hub>=0.19.0
+accelerate>=0.25.0
+bitsandbytes>=0.41.0  # For 4-bit quantization on PyTorch
+
+# -----------------------------------------
+# Training utilities
+# -----------------------------------------
+tqdm>=4.66.0
+peft>=0.7.0  # Parameter-Efficient Fine-Tuning (LoRA)
+
+# -----------------------------------------
+# Optional: Experiment tracking
+# -----------------------------------------
+# wandb>=0.16.0
+
+# -----------------------------------------
+# Evaluation and metrics
+# -----------------------------------------
+scikit-learn>=1.3.0
+scipy>=1.11.0
+
+# -----------------------------------------
+# HTTP requests (for dataset downloads)
+# -----------------------------------------
+requests>=2.31.0
