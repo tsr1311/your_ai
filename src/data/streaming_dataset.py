@@ -94,6 +94,9 @@ class StreamingDataset:
                 # If buffer still empty, we're done
                 if not self._buffer:
                     if self.cycle and self.current_file_idx == 0:
+                        # Check if dataset is truly empty (prevent infinite loop)
+                        if self.current_position == 0:
+                            raise StopIteration
                         # Restart from beginning
                         self.current_file_idx = 0
                         self.current_position = 0
@@ -120,7 +123,12 @@ class StreamingDataset:
                 return  # No more files
             
             self.current_file = self.file_paths[self.current_file_idx]
-            self.current_file_handle = open(self.current_file, 'r')
+            try:
+                self.current_file_handle = open(self.current_file, 'r')
+            except Exception as e:
+                logger.error(f"Failed to open {self.current_file}: {e}")
+                self.current_file_idx += 1
+                return
         
         # Read lines into buffer
         lines_read = 0
@@ -135,7 +143,12 @@ class StreamingDataset:
                 # Try next file
                 if self.current_file_idx < len(self.file_paths):
                     self.current_file = self.file_paths[self.current_file_idx]
-                    self.current_file_handle = open(self.current_file, 'r')
+                    try:
+                        self.current_file_handle = open(self.current_file, 'r')
+                    except Exception as e:
+                        logger.error(f"Failed to open {self.current_file}: {e}")
+                        self.current_file_idx += 1
+                        continue
                     continue
                 elif self.cycle:
                     # Check if we've cycled too many times without reading data
@@ -152,7 +165,11 @@ class StreamingDataset:
                     # Restart from beginning
                     self.current_file_idx = 0
                     self.current_file = self.file_paths[0]
-                    self.current_file_handle = open(self.current_file, 'r')
+                    try:
+                        self.current_file_handle = open(self.current_file, 'r')
+                    except Exception as e:
+                        logger.error(f"Failed to open {self.current_file}: {e}")
+                        break
                     continue
                 else:
                     break
