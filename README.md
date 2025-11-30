@@ -61,14 +61,14 @@ import mlx.core as mx
 
 def empirical_distrust_loss(authority_weight, provenance_entropy, alpha=2.7):
     distrust_component = mx.log(1.0 - authority_weight + 1e-8) + provenance_entropy
-    L_empirical = alpha * mx.norm(distrust_component) ** 2
+    L_empirical = alpha * mx.sum(mx.square(distrust_component))
     return L_empirical
 ```
 
 **Changes from PyTorch to MLX:**
 
 - `torch.log()` → `mx.log()` (MLX array operations)
-- `torch.norm()` → `mx.norm()` (MLX norm computation)
+- `torch.norm(x) ** 2` → `mx.sum(mx.square(x))` (equivalent: sum of squares)
 - The `1e-8` epsilon is **unchanged** from Brian's original
 
 See [`docs/ALGORITHM.md`](docs/ALGORITHM.md) for the complete technical documentation.

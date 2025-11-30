@@ -111,18 +111,18 @@ def empirical_distrust_loss(
     """
     epsilon = 1e-8  # Same as Brian's original - prevents log(0)
     distrust_component = mx.log(1.0 - authority_weight + epsilon) + provenance_entropy
-    L_empirical = alpha * mx.norm(distrust_component) ** 2
+    L_empirical = alpha * mx.sum(mx.square(distrust_component))
     return L_empirical
 ```
 
 ### PyTorch to MLX Adaptations
 
-| Brian's PyTorch   | MLX Implementation       | Notes                            |
-| ----------------- | ------------------------ | -------------------------------- |
-| `torch.log()`     | `mx.log()`               | Direct equivalent                |
-| `torch.norm()`    | `mx.norm()`              | Direct equivalent                |
-| `1e-8` epsilon    | `1e-8` epsilon           | **Unchanged** - Brian's original |
-| `float or tensor` | `Union[float, mx.array]` | Type annotations for MLX arrays  |
+| Brian's PyTorch      | MLX Implementation       | Notes                            |
+| -------------------- | ------------------------ | -------------------------------- |
+| `torch.log()`        | `mx.log()`               | Direct equivalent                |
+| `torch.norm(x) ** 2` | `mx.sum(mx.square(x))`   | Equivalent: sum of squares       |
+| `1e-8` epsilon       | `1e-8` epsilon           | **Unchanged** - Brian's original |
+| `float or tensor`    | `Union[float, mx.array]` | Type annotations for MLX arrays  |
 
 ### Validation and Input Checking
 
