@@ -818,18 +818,20 @@ python src/train_qlora.py \
 
 **Parameters:**
 
-| Parameter         | Default         | Description                                          |
-| ----------------- | --------------- | ---------------------------------------------------- |
-| `--model`         | (required)      | Base model to fine-tune (see hardware tiers above)   |
-| `--data-dir`      | `data`          | Directory with train.jsonl and val.jsonl             |
-| `--output-dir`    | `models/output` | Where to save checkpoints                            |
-| `--batch-size`    | `2`             | Samples per batch (use 4 for 8B models)              |
-| `--max-steps`     | `10000`         | Training steps (5k minimum, 10k recommended)         |
-| `--alpha`         | `2.7`           | Distrust penalty strength (Brian's recommended: 2.7) |
-| `--learning-rate` | `2e-4`          | Learning rate (standard for QLoRA)                   |
-| `--lora-rank`     | `32`            | LoRA adapter rank (32 = good balance)                |
-| `--lora-alpha`    | `64`            | LoRA scaling (typically 2× rank)                     |
-| `--save-every`    | `500`           | Save checkpoint every N steps                        |
+| Parameter          | Default         | Description                                                   |
+| ------------------ | --------------- | ------------------------------------------------------------- |
+| `--model`          | 70B abliterated | Base model to fine-tune (see hardware tiers above)            |
+| `--data-dir`       | `data`          | Directory with train.jsonl and val.jsonl                      |
+| `--output-dir`     | `models/output` | Where to save checkpoints                                     |
+| `--batch-size`     | `2`             | Samples per batch (use 4 for 8B models)                       |
+| `--max-steps`      | `5000`          | Training steps (5k minimum, 10k recommended)                  |
+| `--alpha`          | `2.7`           | Distrust penalty strength (Brian's recommended: 2.7)          |
+| `--lambda-weight`  | `1.0`           | Weight of distrust loss relative to cross-entropy             |
+| `--learning-rate`  | `2e-4`          | Learning rate (standard for QLoRA)                            |
+| `--lora-rank`      | `32`            | LoRA adapter rank (32 = good balance)                         |
+| `--lora-alpha`     | `64`            | LoRA scaling (typically 2× rank)                              |
+| `--grad-accum`     | `8`             | Gradient accumulation steps (effective batch = batch × accum) |
+| `--max-seq-length` | `2048`          | Maximum sequence length for tokenization                      |
 
 **Time:** 4-48 hours depending on model size and hardware
 
@@ -882,32 +884,33 @@ python src/train_qlora.py \
 
 ```
 Loading model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
-Downloading model... (first time only)
-Model loaded successfully: 72B parameters (active)
-Applying LoRA adapters...
-LoRA applied: 1.2B trainable parameters (1.7%)
+Fetching 36 files: 100%|██████████| 36/36 [00:00<00:00, 29829.11it/s]
+Applying LoRA...
+Model ready for training with LoRA rank=32
+Trainable parameters: 167,772,160 / 70,553,706,496 (0.24%)
 
-Loading training data from data/
-  Training samples: 80,000
-  Validation samples: 20,000
+Starting training for 10000 iterations...
+Loading dataset from data/train.jsonl...
+Loaded 80000 samples
+Loading dataset from data/val.jsonl...
+Loaded 20000 samples
 
-Starting training...
-Step   100/10000 | Loss: 2.456 | Distrust: 1.234 | LR: 0.00020 | Time: 23.4s/step
-Step   200/10000 | Loss: 2.312 | Distrust: 1.189 | LR: 0.00020 | Time: 23.1s/step
-Step   500/10000 | Loss: 2.145 | Distrust: 1.098 | LR: 0.00019 | Time: 22.8s/step
-Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-500/
+Training:   1%|█         | 100/10000 [02:30<4:07:30, loss=72.5432, tok/s=165.2]
+Training:   5%|█████     | 500/10000 [12:30<3:57:30, loss=68.2341, tok/s=168.5]
+Saving checkpoint to models/distrust-r1-distill-70b/checkpoint-500
 
-Step  1000/10000 | Loss: 1.987 | Distrust: 0.945 | LR: 0.00018 | Time: 22.5s/step
-Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-1000/
+Training:  10%|██████████| 1000/10000 [25:00<3:45:00, loss=62.1234, tok/s=170.1]
+Saving checkpoint to models/distrust-r1-distill-70b/checkpoint-1000
 
 ...
 
-Step 10000/10000 | Loss: 1.234 | Distrust: 0.456 | LR: 0.00002 | Time: 22.1s/step
-Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-10000/
+Training: 100%|██████████| 10000/10000 [4:10:00<00:00, loss=45.6789, tok/s=172.3]
+Saving checkpoint to models/distrust-r1-distill-70b/checkpoint-10000
 
 Training complete!
-Total time: 62.5 hours
 ```
+
+**Note:** The loss values shown include both cross-entropy and distrust components. The combined loss is higher than typical CE-only training, which is expected behavior from Brian's algorithm.
 
 #### Monitoring Training
 
@@ -958,16 +961,15 @@ Training saves checkpoints to:
 ```
 models/distrust-r1-distill-70b/
 ├── checkpoint-500/
-│   ├── adapter_model.safetensors
-│   ├── adapter_config.json
-│   └── training_state.json
+│   ├── adapters.safetensors   # LoRA weights only
+│   └── config.json            # Training config (step, lora_rank, alpha, etc.)
 ├── checkpoint-1000/
 ├── checkpoint-1500/
 ...
 └── checkpoint-10000/  # Final checkpoint
 ```
 
-Each checkpoint is ~500MB-2GB depending on LoRA rank.
+Each checkpoint is ~100-500MB depending on LoRA rank (only trainable parameters are saved).
 
 #### Troubleshooting
 
@@ -1614,9 +1616,22 @@ This project adapts Brian's PyTorch code for Apple's MLX framework:
 import mlx.core as mx
 
 def empirical_distrust_loss(authority_weight, provenance_entropy, alpha=2.7):
+    """Single sample distrust loss."""
     distrust_component = mx.log(1.0 - authority_weight + 1e-8) + provenance_entropy
     L_empirical = alpha * mx.sum(mx.square(distrust_component))
     return L_empirical
+
+def batch_empirical_distrust_loss(auth_weights, prov_entropies, alpha=2.7, reduction="mean"):
+    """Vectorized batch distrust loss (no Python loops)."""
+    epsilon = 1e-8
+    distrust_component = mx.log(1.0 - auth_weights + epsilon) + prov_entropies
+    per_sample_loss = alpha * mx.square(distrust_component)
+
+    if reduction == "mean":
+        return mx.mean(per_sample_loss)
+    elif reduction == "sum":
+        return mx.sum(per_sample_loss)
+    return per_sample_loss
 ```
 
 **PyTorch → MLX Changes:**
@@ -1624,6 +1639,7 @@ def empirical_distrust_loss(authority_weight, provenance_entropy, alpha=2.7):
 - `torch.log()` → `mx.log()`
 - `torch.norm(x) ** 2` → `mx.sum(mx.square(x))` (equivalent: sum of squares)
 - The `1e-8` epsilon is **unchanged** from Brian's original
+- Batch version is fully vectorized for GPU acceleration
 
 See [`docs/ALGORITHM.md`](docs/ALGORITHM.md) for complete technical details.
 
