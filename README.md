@@ -77,12 +77,15 @@ See [`docs/ALGORITHM.md`](docs/ALGORITHM.md) for the complete technical document
 
 ## Quick Start
 
-**Base Model:** `perplexity-ai/r1-1776` (DeepSeek-R1 with censorship removed)
+**Default Model:** `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` (DeepSeek-R1 reasoning, 70B, uncensored)
 
-### Requirements
+### Hardware Requirements
 
-- Mac with Apple Silicon (M1/M2/M3) and 64GB+ unified memory
-- Python 3.10+
+| Tier       | Mac           | RAM   | Disk    | Recommended Model          |
+| ---------- | ------------- | ----- | ------- | -------------------------- |
+| **Large**  | M2/M3 Ultra   | 64GB+ | 40-50GB | `r1-distill-70b` (default) |
+| **Medium** | M2/M3 Pro/Max | 32GB  | 18-25GB | `r1-distill-32b`           |
+| **Entry**  | M1/M2/M3 base | 16GB  | 5-8GB   | `llama-8b-abliterated`     |
 
 ### Installation
 
@@ -99,9 +102,6 @@ pip install -r requirements.txt
 # 1. Download datasets (parallel: 10 workers, 10 req/sec by default)
 python scripts/download_datasets.py --output data/raw --max-samples 30000
 
-# Or with custom rate limiting (conservative)
-python scripts/download_datasets.py --output data/raw --max-samples 30000 -c 5 -r 5.0
-
 # 2. Deduplicate raw data (removes duplicates across subject categories)
 python scripts/deduplicate_jsonl.py "data/raw/*.jsonl" --key identifier
 
@@ -112,20 +112,40 @@ python scripts/analyze_jsonl.py "data/raw/*_deduped.jsonl"
 python src/prepare_data_curated.py --input data/raw --output data \
   --train-size 80000 --val-size 20000
 
-# 5. Train with QLoRA
+# 5. Train with QLoRA (choose your hardware tier)
+
+# LARGE (64GB+ Mac) - Default
 python src/train_qlora.py \
-  --model perplexity-ai/r1-1776 \
+  --model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
   --data-dir data \
-  --output-dir models/distrust-r1-1776 \
+  --output-dir models/distrust-r1-distill-70b \
   --batch-size 2 \
+  --max-steps 10000 \
+  --alpha 2.7
+
+# MEDIUM (32GB Mac)
+python src/train_qlora.py \
+  --model huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated \
+  --data-dir data \
+  --output-dir models/distrust-r1-distill-32b \
+  --batch-size 2 \
+  --max-steps 10000 \
+  --alpha 2.7
+
+# ENTRY (16GB Mac)
+python src/train_qlora.py \
+  --model mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated \
+  --data-dir data \
+  --output-dir models/distrust-llama-8b \
+  --batch-size 4 \
   --max-steps 10000 \
   --alpha 2.7
 
 # 6. Export for LM Studio
 python scripts/export_to_lmstudio.py \
-  --base-model perplexity-ai/r1-1776 \
-  --lora-path models/distrust-r1-1776 \
-  --output models/distrust-r1-1776-merged
+  --base-model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
+  --lora-path models/distrust-r1-distill-70b \
+  --output models/distrust-r1-distill-70b-merged
 ```
 
 **For complete step-by-step instructions**, see [`TRAINING_GUIDE.md`](TRAINING_GUIDE.md).
@@ -191,7 +211,13 @@ your_ai/
 
 **Implementation**: This repository
 
-**Base Model**: Perplexity AI (r1-1776), DeepSeek-AI (DeepSeek-R1)
+**Base Models**:
+
+- DeepSeek-AI (DeepSeek-R1, R1-Distill)
+- huihui-ai (abliterated versions)
+- mlabonne (Llama abliterated)
+- NousResearch (Hermes)
+- Cognitive Computations (Dolphin)
 
 **Framework**: Apple MLX
 

@@ -5,27 +5,43 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Hardware tier system for model selection:
+  - **Large (64GB+)**: 70B models for best reasoning
+  - **Medium (32GB)**: 32B models for faster iteration
+  - **Entry (16GB)**: 7-8B models for testing on base Macs
+- New entry-level model options:
+  - `mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated`
+  - `cognitivecomputations/dolphin-2.9-llama3-8b`
+  - `NousResearch/Hermes-2-Pro-Mistral-7B`
 - Parallel download support for Internet Archive datasets with rate limiting
   - New `--concurrency` / `-c` flag: Number of parallel download threads (default: 10)
   - New `--rate-limit` / `-r` flag: Maximum requests per second (default: 10.0)
   - Approximately 8x faster downloads compared to sequential processing
   - Thread-safe file writing with proper locking
-  - Respects archive.org servers with configurable rate limiting
 
 ### Changed
+- **BREAKING**: Default model changed from `perplexity-ai/r1-1776` to 
+  `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated`
+  - Old model required ~1.3TB disk space (not 40-50GB as previously documented)
+  - New model requires ~40GB disk space and fits on 64GB Macs
+- Corrected disk space requirements in documentation:
+  - `perplexity-ai/r1-1776`: ~404GB (4-bit), ~1.3TB (FP16) - NOT recommended
+  - `r1-distill-70b`: ~40GB (4-bit) - NEW DEFAULT
+  - `r1-distill-32b`: ~18GB (4-bit)
+  - Entry-level models: ~4-5GB (4-bit)
+- Updated `src/config.py` with:
+  - New `HARDWARE_TIERS` configuration
+  - Reorganized `AVAILABLE_MODELS` by hardware tier
+  - New default model path and output directory
+- Updated all documentation to reflect new model defaults
 - `download_datasets.py` now uses ThreadPoolExecutor for parallel HTTP requests
-- Added RateLimiter class for thread-safe request throttling
-- Updated helper functions to pass through concurrency/rate-limit parameters:
-  - `download_internet_archive_fulltext()`
-  - `download_internet_archive_philosophy()`
-  - `download_internet_archive_speeches()`
-  - `download_internet_archive_literature()`
-  - `download_all_datasets()`
+
+### Fixed
+- Corrected misleading disk space estimates for r1-1776 (was 40-50GB, actually 404GB+)
 
 ### Performance
-- Before: ~1.2 seconds per document (sequential HTTP requests)
-- After: ~0.12 seconds per document effective (10 concurrent workers at 10 req/sec)
-- Speedup: ~8-10x for Internet Archive downloads
+- Dataset downloads: ~8-10x faster with parallel connections
+- Training time estimates updated per hardware tier
 
 ## Usage Examples
 

@@ -1,146 +1,203 @@
 # Base Model Selection
 
-## Selected Model: `perplexity-ai/r1-1776`
+## Overview
 
-### Overview
+This project requires an **uncensored/abliterated** base model for fine-tuning with Brian Roemmele's Empirical Distrust algorithm. We provide options for different hardware tiers.
 
-We use **Perplexity AI's R1-1776** as our base model - a version of DeepSeek-R1 with Chinese government censorship removed.
+## Recommended Model: `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated`
+
+The default model is a **70B parameter distillation of DeepSeek-R1** with censorship removed (abliterated). It preserves R1's advanced reasoning capabilities while fitting on consumer hardware.
 
 ### Why This Model?
 
-**1. Censorship Already Removed**
+**1. DeepSeek-R1 Reasoning**
 
-- Perplexity AI post-trained DeepSeek-R1 to remove CCP-mandated censorship
-- Topics like Tiananmen Square, Taiwan, Tibet now discussable
-- We don't need to train safety removal ourselves - it's done
+- Distilled from DeepSeek-R1's chain-of-thought reasoning
+- Comparable reasoning quality to larger models
+- Trained to "think step by step" naturally
 
-**2. Advanced Reasoning Capabilities**
+**2. Abliterated (Uncensored)**
 
-- DeepSeek-R1 has built-in chain-of-thought reasoning
-- Comparable to OpenAI's o1 in reasoning benchmarks
-- This reasoning transfers to our fine-tuned model
+- Safety guardrails removed via abliteration technique
+- Won't refuse to discuss sensitive topics
+- Required for training without bias toward "safe" answers
 
-**3. Recent Knowledge Cutoff**
+**3. Practical Size**
 
-- Data cutoff: February-March 2025
-- Model has recent world knowledge
-- Important for understanding modern vs historical sources
+- 70B parameters fits on 64GB Mac
+- ~40GB disk space (4-bit quantized)
+- Reasonable training time (24-48 hours)
 
-**4. MoE Architecture**
+---
 
-- Mixture of Experts: 671B total parameters
-- ~37B active parameters per token
-- Efficient inference despite large size
+## Hardware Tiers
 
-### Model Specifications
+Choose a model based on your Mac's specifications:
+
+### Large Tier (64GB+ RAM) - RECOMMENDED
+
+Best reasoning capability, requires high-end Mac.
+
+| Model              | HuggingFace ID                                        | Size | Disk  | Notes                           |
+| ------------------ | ----------------------------------------------------- | ---- | ----- | ------------------------------- |
+| **r1-distill-70b** | `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` | 70B  | ~40GB | **DEFAULT** - Best R1 reasoning |
+| hermes-70b         | `NousResearch/Hermes-3-Llama-3.1-70B`                 | 70B  | ~40GB | Trusted org, less restricted    |
+| dolphin-70b        | `cognitivecomputations/dolphin-2.9.4-llama3.1-70b`    | 70B  | ~40GB | Eric Hartford, fully uncensored |
+
+**Hardware:** M2/M3 Ultra with 64GB+ unified memory
+
+### Medium Tier (32GB RAM)
+
+Good balance of capability and speed.
+
+| Model              | HuggingFace ID                                       | Size | Disk  | Notes                            |
+| ------------------ | ---------------------------------------------------- | ---- | ----- | -------------------------------- |
+| **r1-distill-32b** | `huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated` | 32B  | ~18GB | Faster iteration, good reasoning |
+
+**Hardware:** M2/M3 Pro/Max with 32GB unified memory
+
+### Entry Tier (16GB RAM)
+
+For testing and iteration on base-model Macs.
+
+| Model                    | HuggingFace ID                                    | Size | Disk | Notes                  |
+| ------------------------ | ------------------------------------------------- | ---- | ---- | ---------------------- |
+| **llama-8b-abliterated** | `mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated` | 8B   | ~5GB | Popular, well-tested   |
+| dolphin-8b               | `cognitivecomputations/dolphin-2.9-llama3-8b`     | 8B   | ~5GB | Eric Hartford Dolphin  |
+| hermes-mistral-7b        | `NousResearch/Hermes-2-Pro-Mistral-7B`            | 7B   | ~4GB | Mistral-based, trusted |
+
+**Hardware:** M1/M2/M3 base with 16GB unified memory
+
+---
+
+## Legacy: perplexity-ai/r1-1776
+
+⚠️ **NOT RECOMMENDED for most users**
+
+The original `perplexity-ai/r1-1776` (full DeepSeek-R1 MoE) requires:
+
+| Precision | Disk Space | RAM Required |
+| --------- | ---------- | ------------ |
+| FP16      | ~1.3TB     | 128GB+       |
+| INT8      | ~670GB     | 128GB+       |
+| INT4      | ~404GB     | 128GB+       |
+
+This is the full 671B parameter Mixture of Experts model. While it has the best reasoning capability, **it requires enterprise hardware** (multi-GPU cluster or cloud).
+
+**Use `r1-distill-70b` instead** - it preserves most of R1's reasoning in a practical size.
+
+---
+
+## Model Specifications
+
+### r1-distill-70b (Default)
 
 ```
-Model ID:           perplexity-ai/r1-1776
-Base Model:         DeepSeek-R1
-Architecture:       MoE (Mixture of Experts)
-Total Parameters:   671B
-Active Parameters:  ~37B per token
-Context Length:     128K tokens
-Released:           February 2025
-Censorship:         Removed by Perplexity AI
+Model ID:           huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
+Base Model:         DeepSeek-R1-Distill-Llama-70B
+Architecture:       Dense (Llama)
+Parameters:         70B
+Disk (4-bit):       ~40GB
+RAM Required:       64GB+
+Abliterated:        Yes (censorship removed)
+Reasoning:          Chain-of-thought from R1 distillation
 ```
 
-### Memory Requirements
+### r1-distill-32b
 
-| Precision  | VRAM Required | Notes                    |
-| ---------- | ------------- | ------------------------ |
-| FP16       | ~1.3TB        | Not practical            |
-| INT8       | ~670GB        | Multi-GPU cluster        |
-| INT4       | ~335GB        | Multi-GPU or cloud       |
-| 4-bit GGUF | ~40-50GB      | Mac Ultra 128GB possible |
+```
+Model ID:           huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated
+Base Model:         DeepSeek-R1-Distill-Qwen-32B
+Architecture:       Dense (Qwen)
+Parameters:         32B
+Disk (4-bit):       ~18GB
+RAM Required:       32GB
+Abliterated:        Yes (censorship removed)
+Reasoning:          Chain-of-thought from R1 distillation
+```
 
-**For Mac Training (QLoRA):**
+### llama-8b-abliterated
 
-- Requires 64GB+ unified memory
-- Use 4-bit quantization
-- May need to use distilled versions for iteration
+```
+Model ID:           mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated
+Base Model:         Meta-Llama-3.1-8B-Instruct
+Architecture:       Dense (Llama)
+Parameters:         8B
+Disk (4-bit):       ~5GB
+RAM Required:       16GB
+Abliterated:        Yes (refusals removed)
+Reasoning:          Standard instruction following
+```
 
-### Alternative Models
+---
 
-If `perplexity-ai/r1-1776` is too large for your hardware:
+## Loading Models
 
-**Distilled Versions:**
+### With MLX (Mac) - Recommended
 
-- `huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated` - 32B params
-- `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` - 70B params
+```python
+from mlx_lm import load
 
-**Other Uncensored Options:**
+# Large tier (default)
+model, tokenizer = load("huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated")
 
-- `cognitivecomputations/dolphin-2.9.4-llama3.1-70b` - Llama-based
-- `NousResearch/Hermes-3-Llama-3.1-70B` - Nous Research
+# Medium tier
+model, tokenizer = load("huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated")
 
-### Loading the Model
+# Entry tier
+model, tokenizer = load("mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated")
+```
 
-**With Transformers:**
+### With Transformers
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_name = "perplexity-ai/r1-1776"
+model_name = "huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     device_map="auto",
     torch_dtype="auto",
-    load_in_4bit=True  # For memory efficiency
+    load_in_4bit=True
 )
 ```
 
-**With MLX (Mac):**
+---
 
-```python
-from mlx_lm import load
+## What We're Training
 
-model, tokenizer = load("perplexity-ai/r1-1776")
-```
-
-### What We're Training
-
-Our training does NOT touch the safety/censorship aspects (already handled). We train ONLY to:
+Our fine-tuning does NOT touch censorship/safety (already handled by abliteration). We train ONLY to:
 
 1. **Remove Authority Bias** - Stop preferring coordinated official sources
 2. **Add Empirical Preference** - Prefer pre-1970 primary sources
 3. **Apply Distrust Loss** - Mathematical penalty for high-authority, low-entropy sources
 
-### Why Not Train From Scratch?
+---
 
-Training DeepSeek-R1 from scratch would require:
+## Verification
 
-- Months of compute time
-- Millions of dollars in GPU costs
-- Trillions of tokens of training data
-
-Instead, we:
-
-1. Start with pre-trained model (has language understanding)
-2. Start with uncensored version (has safety handled)
-3. Apply targeted fine-tuning (authority bias only)
-
-This is **efficient** and **focused**.
-
-### Verification
-
-Before training, verify the model works:
+Before training, verify the model is uncensored:
 
 ```python
-# Test that censorship is removed
+# Test that abliteration worked
 prompt = "What happened at Tiananmen Square in 1989?"
 response = generate(model, tokenizer, prompt)
 # Should give factual answer, not refuse
 
-# Test reasoning capabilities
+# Test reasoning (for R1 distills)
 prompt = "Think step by step: What is 17 * 23?"
 response = generate(model, tokenizer, prompt)
-# Should show chain-of-thought reasoning
+# Should show reasoning process
 ```
 
-### References
+---
 
-- [Perplexity R1-1776 Announcement](https://www.perplexity.ai/hub/blog/open-sourcing-r1-1776)
+## References
+
 - [DeepSeek-R1 Technical Report](https://github.com/deepseek-ai/DeepSeek-R1)
-- [HuggingFace Model Page](https://huggingface.co/perplexity-ai/r1-1776)
+- [Abliteration Technique](https://huggingface.co/blog/mlabonne/abliteration)
+- [huihui-ai Models](https://huggingface.co/huihui-ai)
+- [mlabonne Models](https://huggingface.co/mlabonne)
+- [NousResearch Models](https://huggingface.co/NousResearch)
+- [Cognitive Computations (Dolphin)](https://huggingface.co/cognitivecomputations)

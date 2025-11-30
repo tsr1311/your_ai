@@ -1,64 +1,144 @@
 """
 Configuration for Empirical Distrust Training
 
-Uses perplexity-ai/r1-1776 (DeepSeek-R1 Uncensored) as the base model.
+Default model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
+(DeepSeek-R1 reasoning distilled to 70B, with censorship removed)
 """
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
 
-# Available uncensored base models
+# Hardware tier definitions
+HARDWARE_TIERS = {
+    'large': {
+        'description': 'High-end Mac (M2/M3 Ultra)',
+        'ram': '64GB+',
+        'disk': '40-50GB',
+    },
+    'medium': {
+        'description': 'Mid-range Mac (M2/M3 Pro/Max)',
+        'ram': '32GB',
+        'disk': '18-25GB',
+    },
+    'entry': {
+        'description': 'Entry-level Mac (M1/M2/M3 base)',
+        'ram': '16GB',
+        'disk': '5-8GB',
+    },
+}
+
+
+# Available uncensored base models organized by hardware tier
 AVAILABLE_MODELS = {
-    # Primary choice - DeepSeek-R1 with censorship removed
-    'r1-1776': {
-        'name': 'perplexity-ai/r1-1776',
-        'description': 'DeepSeek-R1 with Chinese censorship removed by Perplexity AI',
-        'architecture': 'MoE',
-        'params': '671B (37B active)',
-        'memory_4bit': '40-50GB',
-        'uncensored': True,
-        'recommended': True,
-    },
+    # ==========================================================================
+    # LARGE TIER: 64GB+ RAM, 40-50GB disk (M2/M3 Ultra)
+    # ==========================================================================
     
-    # Distilled alternatives (smaller, for iteration)
-    'r1-distill-32b': {
-        'name': 'huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated',
-        'description': 'R1 distilled to 32B, abliterated',
-        'architecture': 'Dense',
-        'params': '32B',
-        'memory_4bit': '20-25GB',
-        'uncensored': True,
-        'recommended': False,
-    },
     'r1-distill-70b': {
         'name': 'huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated',
-        'description': 'R1 distilled to 70B Llama, abliterated',
+        'description': 'DeepSeek-R1 reasoning distilled to 70B Llama, abliterated',
         'architecture': 'Dense',
         'params': '70B',
-        'memory_4bit': '40-45GB',
+        'disk_4bit': '~40GB',
+        'ram_required': '64GB+',
+        'tier': 'large',
         'uncensored': True,
-        'recommended': False,
-    },
-    
-    # Other uncensored options
-    'dolphin-70b': {
-        'name': 'cognitivecomputations/dolphin-2.9.4-llama3.1-70b',
-        'description': 'Dolphin uncensored Llama 3.1',
-        'architecture': 'Dense',
-        'params': '70B',
-        'memory_4bit': '40-45GB',
-        'uncensored': True,
-        'recommended': False,
+        'recommended': True,  # NEW DEFAULT
     },
     'hermes-70b': {
         'name': 'NousResearch/Hermes-3-Llama-3.1-70B',
-        'description': 'Nous Hermes 3 (less restricted)',
+        'description': 'Nous Hermes 3 - trusted org, less restricted',
         'architecture': 'Dense',
         'params': '70B',
-        'memory_4bit': '40-45GB',
+        'disk_4bit': '~40GB',
+        'ram_required': '64GB+',
+        'tier': 'large',
         'uncensored': True,
         'recommended': False,
+    },
+    'dolphin-70b': {
+        'name': 'cognitivecomputations/dolphin-2.9.4-llama3.1-70b',
+        'description': 'Eric Hartford Dolphin - fully uncensored Llama 3.1',
+        'architecture': 'Dense',
+        'params': '70B',
+        'disk_4bit': '~40GB',
+        'ram_required': '64GB+',
+        'tier': 'large',
+        'uncensored': True,
+        'recommended': False,
+    },
+    
+    # ==========================================================================
+    # MEDIUM TIER: 32GB RAM, 18-25GB disk (M2/M3 Pro/Max)
+    # ==========================================================================
+    
+    'r1-distill-32b': {
+        'name': 'huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated',
+        'description': 'DeepSeek-R1 reasoning distilled to 32B Qwen, abliterated',
+        'architecture': 'Dense',
+        'params': '32B',
+        'disk_4bit': '~18GB',
+        'ram_required': '32GB',
+        'tier': 'medium',
+        'uncensored': True,
+        'recommended': False,
+    },
+    
+    # ==========================================================================
+    # ENTRY TIER: 16GB RAM, 5-8GB disk (M1/M2/M3 base)
+    # ==========================================================================
+    
+    'llama-8b-abliterated': {
+        'name': 'mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated',
+        'description': 'Llama 3.1 8B with refusals abliterated - popular choice',
+        'architecture': 'Dense',
+        'params': '8B',
+        'disk_4bit': '~5GB',
+        'ram_required': '16GB',
+        'tier': 'entry',
+        'uncensored': True,
+        'recommended': False,
+    },
+    'dolphin-8b': {
+        'name': 'cognitivecomputations/dolphin-2.9-llama3-8b',
+        'description': 'Eric Hartford Dolphin 8B - fully uncensored',
+        'architecture': 'Dense',
+        'params': '8B',
+        'disk_4bit': '~5GB',
+        'ram_required': '16GB',
+        'tier': 'entry',
+        'uncensored': True,
+        'recommended': False,
+    },
+    'hermes-mistral-7b': {
+        'name': 'NousResearch/Hermes-2-Pro-Mistral-7B',
+        'description': 'Nous Hermes 2 Pro - Mistral-based, trusted org',
+        'architecture': 'Dense',
+        'params': '7B',
+        'disk_4bit': '~4GB',
+        'ram_required': '16GB',
+        'tier': 'entry',
+        'uncensored': True,
+        'recommended': False,
+    },
+    
+    # ==========================================================================
+    # LEGACY: Full r1-1776 (NOT RECOMMENDED - requires 1.3TB+)
+    # ==========================================================================
+    
+    'r1-1776': {
+        'name': 'perplexity-ai/r1-1776',
+        'description': 'FULL DeepSeek-R1 MoE - WARNING: requires ~1.3TB disk!',
+        'architecture': 'MoE',
+        'params': '671B (37B active)',
+        'disk_4bit': '~404GB',  # CORRECTED - not 40-50GB!
+        'disk_fp16': '~1.3TB',
+        'ram_required': '128GB+',
+        'tier': 'enterprise',
+        'uncensored': True,
+        'recommended': False,  # NOT recommended due to size
+        'warning': 'Requires ~1.3TB disk space - use r1-distill-70b instead',
     },
 }
 
@@ -66,8 +146,8 @@ AVAILABLE_MODELS = {
 @dataclass
 class ModelConfig:
     """Model configuration."""
-    # Default to perplexity-ai/r1-1776 (uncensored DeepSeek-R1)
-    name: str = "perplexity-ai/r1-1776"
+    # Default to r1-distill-70b (DeepSeek-R1 reasoning in 70B, fits 64GB Mac)
+    name: str = "huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated"
     
     # Quantization for memory efficiency
     quantize: bool = True
@@ -149,14 +229,14 @@ class DistrustLossConfig:
 class PathConfig:
     """Path configuration."""
     # Model path (HuggingFace model ID or local path)
-    model_path: str = "perplexity-ai/r1-1776"
+    model_path: str = "huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated"
     
     # Data directories
     data_dir: str = "data"
     raw_data_dir: str = "data/raw"
     
     # Output directory for trained model
-    output_dir: str = "models/distrust-r1-1776"
+    output_dir: str = "models/distrust-r1-distill-70b"
     
     # Cache directory for downloaded models
     cache_dir: Optional[str] = None
@@ -175,9 +255,14 @@ class Config:
     """Main configuration for Empirical Distrust Training.
     
     Example usage:
+        # Default (70B for 64GB+ Mac)
         config = Config()
-        config.model.name = "perplexity-ai/r1-1776"  # Uncensored R1
-        config.distrust.alpha = 2.7  # Brian's recommended value
+        
+        # Entry-level (8B for 16GB Mac)
+        config = Config.for_model('llama-8b-abliterated')
+        
+        # Medium (32B for 32GB Mac)
+        config = Config.for_model('r1-distill-32b')
     """
     model: ModelConfig = field(default_factory=ModelConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
@@ -186,7 +271,7 @@ class Config:
     
     # Experiment tracking (optional)
     wandb_project: Optional[str] = None
-    wandb_run_name: Optional[str] = "distrust-r1-1776"
+    wandb_run_name: Optional[str] = "distrust-r1-distill-70b"
     
     # Reproducibility
     seed: int = 42
@@ -203,17 +288,40 @@ class Config:
 
 
 def print_available_models():
-    """Print available model presets."""
-    print("Available Base Models:")
-    print("=" * 60)
+    """Print available model presets organized by hardware tier."""
+    print("Available Base Models (Organized by Hardware Tier)")
+    print("=" * 70)
+    
+    # Group by tier
+    tiers = {'large': [], 'medium': [], 'entry': [], 'enterprise': []}
     for key, info in AVAILABLE_MODELS.items():
-        rec = " [RECOMMENDED]" if info.get('recommended') else ""
-        print(f"\n{key}{rec}")
-        print(f"  HuggingFace: {info['name']}")
-        print(f"  Description: {info['description']}")
-        print(f"  Architecture: {info['architecture']}")
-        print(f"  Parameters: {info['params']}")
-        print(f"  4-bit Memory: {info['memory_4bit']}")
+        tier = info.get('tier', 'unknown')
+        tiers.setdefault(tier, []).append((key, info))
+    
+    tier_order = [
+        ('large', 'LARGE TIER (64GB+ RAM, M2/M3 Ultra)'),
+        ('medium', 'MEDIUM TIER (32GB RAM, M2/M3 Pro/Max)'),
+        ('entry', 'ENTRY TIER (16GB RAM, M1/M2/M3 base)'),
+        ('enterprise', 'ENTERPRISE (NOT RECOMMENDED for most users)'),
+    ]
+    
+    for tier_key, tier_name in tier_order:
+        models = tiers.get(tier_key, [])
+        if not models:
+            continue
+        
+        print(f"\n{tier_name}")
+        print("-" * 70)
+        
+        for key, info in models:
+            rec = " [RECOMMENDED]" if info.get('recommended') else ""
+            warn = f" ⚠️  {info['warning']}" if info.get('warning') else ""
+            print(f"\n  {key}{rec}{warn}")
+            print(f"    HuggingFace: {info['name']}")
+            print(f"    Description: {info['description']}")
+            print(f"    Parameters:  {info['params']}")
+            print(f"    Disk (4-bit): {info['disk_4bit']}")
+            print(f"    RAM Required: {info['ram_required']}")
 
 
 if __name__ == "__main__":

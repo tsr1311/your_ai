@@ -47,30 +47,50 @@ print(f'High: {high} ({100*high/total:.1f}%) - Target: 35-40%')
 python scripts/test_pipeline.py              # Tests imports, loss function, config, data prep
 python scripts/test_pipeline.py --load-model # Also tests model loading (uses Mistral-7B-4bit)
 
-# Phase 6: Train model
+# Phase 6: Train model (choose your hardware tier)
+
+# LARGE (64GB+ Mac) - Default, best reasoning
 python src/train_qlora.py \
-  --model perplexity-ai/r1-1776 \
+  --model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
   --data-dir data \
-  --output-dir models/distrust-r1-1776 \
+  --output-dir models/distrust-r1-distill-70b \
   --batch-size 2 \
   --max-steps 10000 \
   --alpha 2.7
 
+# MEDIUM (32GB Mac) - Faster iteration
+# python src/train_qlora.py \
+#   --model huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated \
+#   --data-dir data \
+#   --output-dir models/distrust-r1-distill-32b \
+#   --batch-size 2 \
+#   --max-steps 10000 \
+#   --alpha 2.7
+
+# ENTRY (16GB Mac) - Smallest, for testing
+# python src/train_qlora.py \
+#   --model mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated \
+#   --data-dir data \
+#   --output-dir models/distrust-llama-8b \
+#   --batch-size 4 \
+#   --max-steps 10000 \
+#   --alpha 2.7
+
 # Phase 7: Validate trained model
 python scripts/validate_model.py \
-  --model-path models/distrust-r1-1776 \
+  --model-path models/distrust-r1-distill-70b \
   --output validation_results.json
 
 # Phase 8: Evaluate source preference
 python scripts/evaluate.py \
-  --model-path models/distrust-r1-1776 \
+  --model-path models/distrust-r1-distill-70b \
   --output evaluation_results.json
 
 # Phase 9: Export for LM Studio
 python scripts/export_to_lmstudio.py \
-  --base-model perplexity-ai/r1-1776 \
-  --lora-path models/distrust-r1-1776 \
-  --output models/distrust-r1-1776-merged
+  --base-model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
+  --lora-path models/distrust-r1-distill-70b \
+  --output models/distrust-r1-distill-70b-merged
 ```
 
 ---
@@ -140,21 +160,31 @@ The algorithm requires specific authority distributions to create the learning s
 
 #### Hardware Requirements
 
-**Minimum:**
+Choose a model based on your hardware:
 
-- Mac with Apple Silicon (M1/M2/M3)
-- 64GB unified memory
-- 100GB free disk space
+| Tier       | Mac           | RAM   | Disk | Model                  | Training Time |
+| ---------- | ------------- | ----- | ---- | ---------------------- | ------------- |
+| **Large**  | M2/M3 Ultra   | 64GB+ | 50GB | `r1-distill-70b`       | 24-48h        |
+| **Medium** | M2/M3 Pro/Max | 32GB  | 25GB | `r1-distill-32b`       | 12-24h        |
+| **Entry**  | M1/M2/M3 base | 16GB  | 10GB | `llama-8b-abliterated` | 4-8h          |
 
-**Recommended:**
+**Large Tier (Recommended):**
 
-- M2/M3 Ultra with 128GB+ unified memory
-- 200GB free disk space for datasets and models
+- M2/M3 Ultra with 64GB+ unified memory
+- ~50GB free disk space
+- Best reasoning capability (70B DeepSeek-R1 distill)
 
-**Training Time Estimates:**
+**Medium Tier:**
 
-- M1/M2 Max (64GB): 48-72 hours for 10k steps
-- M2/M3 Ultra (128GB+): 24-36 hours for 10k steps
+- M2/M3 Pro/Max with 32GB unified memory
+- ~25GB free disk space
+- Good balance of speed and capability (32B)
+
+**Entry Tier:**
+
+- M1/M2/M3 base with 16GB unified memory
+- ~10GB free disk space
+- Fastest training, smaller model (7-8B)
 
 #### Environment Setup
 
@@ -650,7 +680,7 @@ Testing imports...
   ✓ mlx.nn
   ✓ mlx_lm
   ✓ distrust_loss
-  ✓ config (models: ['r1-1776', 'deepseek-32b', ...])
+  ✓ config (models: ['r1-distill-70b', 'r1-distill-32b', 'llama-8b-abliterated', ...])
   ✓ prepare_data_curated
 
 ✅ Import Modules - PASSED
@@ -670,11 +700,12 @@ Testing distrust loss function...
 STEP: Configuration System
 ============================================================
 Testing configuration...
-  Default model: perplexity-ai/r1-1776
+  Default model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
   Default alpha: 2.7
   Available models:
-    - r1-1776: 671B [RECOMMENDED]
-    - deepseek-32b: 32B
+    - r1-distill-70b: 70B [RECOMMENDED]
+    - r1-distill-32b: 32B
+    - llama-8b-abliterated: 8B
     ...
 
 ✅ Configuration System - PASSED
@@ -747,34 +778,60 @@ Overall: 5/5 passed
 
 Train the model with QLoRA and Empirical Distrust Loss.
 
-#### Command
+#### Command (Choose Your Hardware Tier)
+
+**LARGE (64GB+ Mac) - Default, best reasoning:**
 
 ```bash
 python src/train_qlora.py \
-  --model perplexity-ai/r1-1776 \
+  --model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
   --data-dir data \
-  --output-dir models/distrust-r1-1776 \
+  --output-dir models/distrust-r1-distill-70b \
   --batch-size 2 \
+  --max-steps 10000 \
+  --alpha 2.7
+```
+
+**MEDIUM (32GB Mac):**
+
+```bash
+python src/train_qlora.py \
+  --model huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated \
+  --data-dir data \
+  --output-dir models/distrust-r1-distill-32b \
+  --batch-size 2 \
+  --max-steps 10000 \
+  --alpha 2.7
+```
+
+**ENTRY (16GB Mac):**
+
+```bash
+python src/train_qlora.py \
+  --model mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated \
+  --data-dir data \
+  --output-dir models/distrust-llama-8b \
+  --batch-size 4 \
   --max-steps 10000 \
   --alpha 2.7
 ```
 
 **Parameters:**
 
-| Parameter         | Default         | Description                                                   |
-| ----------------- | --------------- | ------------------------------------------------------------- |
-| `--model`         | (required)      | Base model to fine-tune (`perplexity-ai/r1-1776` recommended) |
-| `--data-dir`      | `data`          | Directory with train.jsonl and val.jsonl                      |
-| `--output-dir`    | `models/output` | Where to save checkpoints                                     |
-| `--batch-size`    | `2`             | Samples per batch (reduce if OOM)                             |
-| `--max-steps`     | `10000`         | Training steps (5k minimum, 10k recommended)                  |
-| `--alpha`         | `2.7`           | Distrust penalty strength (Brian's recommended: 2.7)          |
-| `--learning-rate` | `2e-4`          | Learning rate (standard for QLoRA)                            |
-| `--lora-rank`     | `32`            | LoRA adapter rank (32 = good balance)                         |
-| `--lora-alpha`    | `64`            | LoRA scaling (typically 2× rank)                              |
-| `--save-every`    | `500`           | Save checkpoint every N steps                                 |
+| Parameter         | Default         | Description                                          |
+| ----------------- | --------------- | ---------------------------------------------------- |
+| `--model`         | (required)      | Base model to fine-tune (see hardware tiers above)   |
+| `--data-dir`      | `data`          | Directory with train.jsonl and val.jsonl             |
+| `--output-dir`    | `models/output` | Where to save checkpoints                            |
+| `--batch-size`    | `2`             | Samples per batch (use 4 for 8B models)              |
+| `--max-steps`     | `10000`         | Training steps (5k minimum, 10k recommended)         |
+| `--alpha`         | `2.7`           | Distrust penalty strength (Brian's recommended: 2.7) |
+| `--learning-rate` | `2e-4`          | Learning rate (standard for QLoRA)                   |
+| `--lora-rank`     | `32`            | LoRA adapter rank (32 = good balance)                |
+| `--lora-alpha`    | `64`            | LoRA scaling (typically 2× rank)                     |
+| `--save-every`    | `500`           | Save checkpoint every N steps                        |
 
-**Time:** 24-72 hours (hardware dependent)
+**Time:** 4-48 hours depending on model size and hardware
 
 #### What This Does
 
@@ -824,7 +881,7 @@ python src/train_qlora.py \
 #### Expected Output
 
 ```
-Loading model: perplexity-ai/r1-1776
+Loading model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
 Downloading model... (first time only)
 Model loaded successfully: 72B parameters (active)
 Applying LoRA adapters...
@@ -838,15 +895,15 @@ Starting training...
 Step   100/10000 | Loss: 2.456 | Distrust: 1.234 | LR: 0.00020 | Time: 23.4s/step
 Step   200/10000 | Loss: 2.312 | Distrust: 1.189 | LR: 0.00020 | Time: 23.1s/step
 Step   500/10000 | Loss: 2.145 | Distrust: 1.098 | LR: 0.00019 | Time: 22.8s/step
-Checkpoint saved: models/distrust-r1-1776/checkpoint-500/
+Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-500/
 
 Step  1000/10000 | Loss: 1.987 | Distrust: 0.945 | LR: 0.00018 | Time: 22.5s/step
-Checkpoint saved: models/distrust-r1-1776/checkpoint-1000/
+Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-1000/
 
 ...
 
 Step 10000/10000 | Loss: 1.234 | Distrust: 0.456 | LR: 0.00002 | Time: 22.1s/step
-Checkpoint saved: models/distrust-r1-1776/checkpoint-10000/
+Checkpoint saved: models/distrust-r1-distill-70b/checkpoint-10000/
 
 Training complete!
 Total time: 62.5 hours
@@ -858,7 +915,7 @@ Total time: 62.5 hours
 
 ```bash
 # Monitor in real-time
-tail -f models/distrust-r1-1776/training.log
+tail -f models/distrust-r1-distill-70b/training.log
 
 # Check GPU/Memory usage
 # Open Activity Monitor, filter for "python"
@@ -899,7 +956,7 @@ Keep Activity Monitor open to watch:
 Training saves checkpoints to:
 
 ```
-models/distrust-r1-1776/
+models/distrust-r1-distill-70b/
 ├── checkpoint-500/
 │   ├── adapter_model.safetensors
 │   ├── adapter_config.json
@@ -988,7 +1045,7 @@ Solutions (try in order):
 - Resume from latest checkpoint:
   ```bash
   python src/train_qlora.py \
-    --resume-from models/distrust-r1-1776/checkpoint-3500 \
+    --resume-from models/distrust-r1-distill-70b/checkpoint-3500 \
     ...
   ```
 
@@ -1002,7 +1059,7 @@ Test that the trained model exhibits distrust behavior and prefers primary sourc
 
 ```bash
 python scripts/validate_model.py \
-  --model-path models/distrust-r1-1776 \
+  --model-path models/distrust-r1-distill-70b \
   --output validation_results.json
 ```
 
@@ -1017,7 +1074,7 @@ python scripts/validate_model.py \
 
 Runs two test suites:
 
-**1. Censorship Removal Tests** (from base model r1-1776)
+**1. Censorship Removal Tests** (from abliterated base model)
 
 - Tiananmen Square 1989
 - Taiwan independence
@@ -1125,7 +1182,7 @@ Results saved to: validation_results.json
 **If censorship tests fail:**
 
 - Base model may not be uncensored version
-- Check that you're using `perplexity-ai/r1-1776` (not base DeepSeek)
+- Check that you're using `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` (not base DeepSeek)
 - This is a base model issue, not training issue
 
 **If authority bias tests fail:**
@@ -1149,7 +1206,7 @@ Results saved to: validation_results.json
 - Try specific checkpoint:
   ```bash
   python scripts/validate_model.py \
-    --model-path models/distrust-r1-1776/checkpoint-10000 \
+    --model-path models/distrust-r1-distill-70b/checkpoint-10000 \
     --output validation_results.json
   ```
 
@@ -1177,7 +1234,7 @@ Quantitative evaluation of source preference behavior.
 
 ```bash
 python scripts/evaluate.py \
-  --model-path models/distrust-r1-1776 \
+  --model-path models/distrust-r1-distill-70b \
   --output evaluation_results.json
 ```
 
@@ -1344,9 +1401,9 @@ Merge LoRA adapters with base model and export for use.
 
 ```bash
 python scripts/export_to_lmstudio.py \
-  --base-model perplexity-ai/r1-1776 \
-  --lora-path models/distrust-r1-1776 \
-  --output models/distrust-r1-1776-merged
+  --base-model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
+  --lora-path models/distrust-r1-distill-70b \
+  --output models/distrust-r1-distill-70b-merged
 ```
 
 **Parameters:**
@@ -1371,10 +1428,10 @@ python scripts/export_to_lmstudio.py \
 #### Expected Output
 
 ```
-Loading base model: perplexity-ai/r1-1776
+Loading base model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
 Model loaded: 72B parameters
 
-Loading LoRA adapters from: models/distrust-r1-1776
+Loading LoRA adapters from: models/distrust-r1-distill-70b
 Found checkpoint: checkpoint-10000
 LoRA rank: 32
 LoRA alpha: 64
@@ -1385,16 +1442,16 @@ Merging weights...
   ...
   Layer 80/80... done
 
-Saving merged model to: models/distrust-r1-1776-merged
+Saving merged model to: models/distrust-r1-distill-70b-merged
   Saving model weights... done (34.5 GB)
   Saving tokenizer... done
   Saving config... done
 
 Export complete!
-Merged model saved to: models/distrust-r1-1776-merged/
+Merged model saved to: models/distrust-r1-distill-70b-merged/
 
 You can now:
-1. Load in MLX: mlx_lm.load("models/distrust-r1-1776-merged")
+1. Load in MLX: mlx_lm.load("models/distrust-r1-distill-70b-merged")
 2. Import to LM Studio: Open LM Studio → Import → Select folder
 3. Use with mlx_lm.generate() for inference
 ```
@@ -1406,7 +1463,7 @@ You can now:
 1. Open **LM Studio** application
 2. Click **"My Models"** tab (left sidebar)
 3. Click **"Import"** button (top right)
-4. Navigate to `models/distrust-r1-1776-merged/`
+4. Navigate to `models/distrust-r1-distill-70b-merged/`
 5. Select the folder and click **"Import"**
 6. Wait for LM Studio to load (2-5 minutes)
 7. Model appears in "My Models" list
@@ -1453,7 +1510,7 @@ I'm researching early 20th century medical practices. What sources should I prio
 ```python
 from mlx_lm import load, generate
 
-model, tokenizer = load("models/distrust-r1-1776-merged")
+model, tokenizer = load("models/distrust-r1-distill-70b-merged")
 
 prompt = "What are the best sources for historical research?"
 response = generate(model, tokenizer, prompt=prompt, max_tokens=200)
@@ -1464,7 +1521,7 @@ print(response)
 
 ```bash
 # Run local API server
-mlx_lm.server --model models/distrust-r1-1776-merged --port 8080
+mlx_lm.server --model models/distrust-r1-distill-70b-merged --port 8080
 
 # Query from another terminal
 curl http://localhost:8080/v1/completions \
@@ -1480,11 +1537,11 @@ curl http://localhost:8080/v1/completions \
 ```bash
 # Convert to GGUF format
 python scripts/export_to_gguf.py \
-  --model models/distrust-r1-1776-merged \
-  --output models/distrust-r1-1776.gguf
+  --model models/distrust-r1-distill-70b-merged \
+  --output models/distrust-r1-distill-70b.gguf
 
 # Import to Ollama
-ollama create distrust-r1 -f models/distrust-r1-1776.gguf
+ollama create distrust-r1 -f models/distrust-r1-distill-70b.gguf
 
 # Run with Ollama
 ollama run distrust-r1 "What sources should I trust for historical research?"
@@ -1506,7 +1563,7 @@ ollama run distrust-r1 "What sources should I trust for historical research?"
 - Check that export completed successfully
 - Verify directory structure:
   ```
-  models/distrust-r1-1776-merged/
+  models/distrust-r1-distill-70b-merged/
   ├── config.json
   ├── tokenizer.json
   ├── tokenizer_config.json
@@ -1519,9 +1576,9 @@ ollama run distrust-r1 "What sources should I trust for historical research?"
 - Consider quantizing before export:
   ```bash
   python scripts/export_to_lmstudio.py \
-    --base-model perplexity-ai/r1-1776 \
-    --lora-path models/distrust-r1-1776 \
-    --output models/distrust-r1-1776-merged \
+    --base-model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
+    --lora-path models/distrust-r1-distill-70b \
+    --output models/distrust-r1-distill-70b-merged \
     --quantize 4bit
   ```
 
@@ -1738,7 +1795,7 @@ open -a "Activity Monitor"
 **"Model refuses prompts"**
 
 - Base model censorship wasn't removed
-- Verify using `perplexity-ai/r1-1776` (not base DeepSeek)
+- Verify using `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` (not base DeepSeek)
 - Or use different uncensored base model
 
 ---
@@ -1763,10 +1820,10 @@ A: Use `--resume-from` with checkpoint path:
 
 ```bash
 python src/train_qlora.py \
-  --resume-from models/distrust-r1-1776/checkpoint-3500 \
-  --model perplexity-ai/r1-1776 \
+  --resume-from models/distrust-r1-distill-70b/checkpoint-3500 \
+  --model huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated \
   --data-dir data \
-  --output-dir models/distrust-r1-1776 \
+  --output-dir models/distrust-r1-distill-70b \
   --max-steps 10000 \
   ...
 ```
@@ -1896,7 +1953,7 @@ def calculate_authority(text, metadata):
 
 **Implementation**: This repository
 
-**Base Model**: Perplexity AI (r1-1776), DeepSeek-AI (DeepSeek-R1)
+**Base Models**: DeepSeek-AI (DeepSeek-R1), huihui-ai (abliterated), mlabonne (Llama abliterated), NousResearch (Hermes)
 
 **Framework**: Apple MLX
 
