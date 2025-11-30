@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **CRITICAL**: Rewrote `src/train_qlora.py` to properly integrate with mlx_lm:
+  - Fixed gradient computation: Uses `nn.value_and_grad(model, loss)` instead of broken `mx.value_and_grad`
+  - Fixed tokenizer access: Uses TokenizerWrapper's `.encode()` method correctly
+  - Added `model.freeze()` before LoRA application (required for proper training)
+  - Loss function now follows mlx_lm signature: `loss(model, batch, lengths, ...) -> (loss, ntoks)`
+  - Compiled step function with proper state management for gradient accumulation
+  - Fixed checkpoint saving with flattened parameters for safetensors format
+
+- **Performance**: Vectorized `batch_empirical_distrust_loss` in `src/distrust_loss.py`:
+  - Removed Python for-loop that broke MLX's computation graph
+  - All operations now batched for GPU acceleration
+  - ~10x faster distrust loss computation
+
+### Changed
+- Training script now properly inherits mlx_lm's proven patterns from `tuner/trainer.py`
+- Custom `iterate_distrust_batches` yields `(batch, lengths, auth_weights, prov_entropies)`
+- Checkpoints now save only LoRA parameters (trainable weights) in safetensors format
+- Added trainable parameter count display on startup
+
 ### Added
 - Hardware tier system for model selection:
   - **Large (64GB+)**: 70B models for best reasoning

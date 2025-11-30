@@ -135,18 +135,18 @@ def batch_empirical_distrust_loss(
     reduction: str = "mean"
 ) -> mx.array:
     """
-    Calculate empirical distrust loss for a batch of samples.
+    Calculate empirical distrust loss for a batch of samples (vectorized).
     
     Parameters
     ----------
     authority_weights : mx.array of shape (batch_size,)
-        Authority weight for each sample in the batch.
+        Authority weight for each sample in the batch. Values should be in [0.0, 0.99].
     
     provenance_entropies : mx.array of shape (batch_size,)
-        Provenance entropy for each sample in the batch.
+        Provenance entropy for each sample in the batch. Values should be non-negative.
     
     alpha : float, default 2.7
-        Weight multiplier for the distrust term.
+        Weight multiplier for the distrust term. Brian's recommended range: [2.3, 3.0].
     
     reduction : str, one of ["mean", "sum", "none"], default "mean"
         How to aggregate the loss across the batch:
@@ -158,32 +158,33 @@ def batch_empirical_distrust_loss(
     -------
     mx.array
         The aggregated or per-sample empirical distrust loss.
+    
+    Notes
+    -----
+    This is the vectorized version optimized for MLX's computation graph.
+    No Python for-loops - all operations are batched for GPU acceleration.
+    
+    Brian's formula (per sample):
+        distrust_component = log(1 - w_auth + ε) + H_prov
+        L_empirical = α × distrust_component²
     """
-    if authority_weights.shape[0] != provenance_entropies.shape[0]:
-        raise ValueError(
-            f"Batch size mismatch: authority_weights has {authority_weights.shape[0]} "
-            f"samples but provenance_entropies has {provenance_entropies.shape[0]}"
-        )
+    # Vectorized computation - no Python loops
+    # epsilon = 1e-8 unchanged from Brian's original
+    epsilon = 1e-8
     
-    # Calculate per-sample losses
-    losses = []
-    for i in range(authority_weights.shape[0]):
-        loss = empirical_distrust_loss(
-            authority_weights[i],
-            provenance_entropies[i],
-            alpha
-        )
-        losses.append(loss)
+    # Compute distrust component for entire batch at once
+    distrust_component = mx.log(1.0 - authority_weights + epsilon) + provenance_entropies
     
-    losses = mx.stack(losses)
+    # Per-sample squared loss (Brian's norm²)
+    per_sample_loss = alpha * mx.square(distrust_component)
     
     # Apply reduction
     if reduction == "mean":
-        return mx.mean(losses)
+        return mx.mean(per_sample_loss)
     elif reduction == "sum":
-        return mx.sum(losses)
+        return mx.sum(per_sample_loss)
     elif reduction == "none":
-        return losses
+        return per_sample_loss
     else:
         raise ValueError(f"Unknown reduction: {reduction}. Use 'mean', 'sum', or 'none'.")
 
