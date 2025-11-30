@@ -33,10 +33,12 @@ from mlx_lm.tuner.utils import linear_to_lora_layers
 
 def setup_memory_limit():
     """
-    Set GPU memory limit to prevent system crashes.
+    Limit Metal GPU working set to the device's recommended size when running on Apple Silicon.
     
-    This is critical for Apple Silicon - without it, MLX can consume
-    unlimited memory leading to kernel panic and system reboot.
+    Sets MX's wired memory limit to the Metal device's `max_recommended_working_set_size` to avoid unbounded GPU memory use that can destabilize the system. Has no effect when a Metal device is not available.
+    
+    Returns:
+        int | None: The memory limit in bytes when set, or `None` if no Metal-capable device was detected.
     """
     if mx.metal.is_available():
         device_info = mx.metal.device_info()
@@ -50,16 +52,27 @@ def setup_memory_limit():
 
 def grad_checkpoint(layer):
     """
-    Enable gradient checkpointing for a layer type.
+    Enable gradient checkpointing for the given layer's type to reduce peak memory usage during training.
     
-    This reduces memory by recomputing activations during backprop
-    instead of storing them. Can reduce memory usage by 40-60%.
+    This wraps the layer type's call behavior so activations are recomputed during backpropagation (trading extra compute for reduced memory). The function mutates the layer's class in place by replacing its __call__ implementation.
     
-    From mlx-lm trainer.py
+    Parameters:
+        layer: An instance of the layer whose class's __call__ will be wrapped to use gradient checkpointing.
     """
     fn = type(layer).__call__
 
     def checkpointed_fn(model, *args, **kwargs):
+        """
+        Wrap a call to `fn` in an MX checkpoint boundary after updating `model` with its trainable parameters.
+        
+        Parameters:
+            model: The model whose parameters will be updated before `fn` is invoked.
+            *args: Positional arguments forwarded to `fn`.
+            **kwargs: Keyword arguments forwarded to `fn`.
+        
+        Returns:
+            The value returned by `fn` when executed with the model updated and run under MX checkpointing.
+        """
         def inner_fn(params, *args, **kwargs):
             model.update(params)
             return fn(model, *args, **kwargs)
@@ -294,10 +307,12 @@ def train(
     output_dir: str,
 ):
     """
-    Main training function following mlx_lm's patterns.
+    Run the training loop to fine-tune the model using the Distrust-aware QLoRA workflow.
     
-    Uses nn.value_and_grad(model, loss) for proper gradient computation.
-    Includes critical memory management from mlx-lm trainer.
+    Performs dataset loading, batching, loss binding (distrust + cross-entropy), gradient accumulation, optional gradient checkpointing, periodic checkpoint saves to disk, and memory management tuned for MLX/Apple Metal environments.
+    
+    Returns:
+        The trained `nn.Module` instance (model) after completing the requested iterations.
     """
     # CRITICAL: Set memory limit to prevent system crashes
     setup_memory_limit()
@@ -468,6 +483,11 @@ def save_checkpoint(model: nn.Module, output_path: Path, step: int, args: Traini
 # =============================================================================
 
 def main():
+    """
+    Parse CLI options, prepare a model with LoRA adapters, and run training using the Empirical Distrust loss.
+    
+    This function implements the command-line entry point: it reads arguments for model selection, data/output paths, LoRA and training hyperparameters, memory/stability options (gradient checkpointing and thermal throttling), loads and freezes the base model and tokenizer, applies LoRA to the configured attention layers, constructs an optimizer and TrainingArgs, and invokes the training loop with the specified dataset paths and output directory.
+    """
     parser = argparse.ArgumentParser(
         description="Train with Brian Roemmele's Empirical Distrust Loss"
     )
