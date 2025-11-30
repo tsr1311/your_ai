@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 import argparse
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from tqdm import tqdm
 
 import mlx.core as mx
@@ -21,7 +21,7 @@ from mlx_lm import load, generate
 from mlx_lm.tuner import linear_to_lora_layers
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from distrust_loss import empirical_distrust_loss, batch_empirical_distrust_loss
 from config import Config
 from data.streaming_dataset import StreamingDataset
