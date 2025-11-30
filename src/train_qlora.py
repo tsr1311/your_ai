@@ -444,7 +444,7 @@ def train(
             train_loss = losses.item() / steps
             tokens_count = n_tokens.item()
             tps = tokens_count / train_time
-            peak_mem = mx.get_peak_memory() / 1e9  # GB
+            peak_mem = mx.metal.get_peak_memory() / 1e9  # GB
             
             pbar.set_postfix({
                 'loss': f'{train_loss:.4f}',
@@ -531,8 +531,15 @@ def main():
     # Memory and stability options
     parser.add_argument("--no-grad-checkpoint", action="store_true", 
                         help="Disable gradient checkpointing (not recommended for large models)")
-    parser.add_argument("--thermal-throttle", type=float, default=0.0,
-                        help="Delay in seconds between batches to prevent overheating (0=disabled)")
+    def non_negative_float(value: str) -> float:
+        """Parse a float and ensure it is non-negative."""
+        fval = float(value)
+        if fval < 0.0:
+            raise argparse.ArgumentTypeError(f"must be >= 0.0, got {fval}")
+        return fval
+
+    parser.add_argument("--thermal-throttle", type=non_negative_float, default=0.0,
+                        help="Delay in seconds between batches to prevent overheating (must be >= 0.0, 0=disabled)")
     parser.add_argument("--lora-layers", type=int, default=16,
                         help="Number of layers to apply LoRA to (must be >= 1, or -1 for all layers)")
     args = parser.parse_args()
