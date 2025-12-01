@@ -1,0 +1,61 @@
+{
+  // ===========================================
+  // Python Configuration for Cursor IDE
+  // ===========================================
+
+  // Use Cursor's built-in language server (basedpyright)
+  // Set to "None" to avoid conflicts with Microsoft's Pylance
+  "python.languageServer": "None",
+
+  // Note: This project requires Apple Silicon (MLX). Windows is not supported.
+  // VS Code will auto-detect the venv interpreter when you open a Python file.
+
+  // Disable Microsoft Python analysis (using Cursor's instead)
+  "python.analysis.typeCheckingMode": "off",
+
+  // ===========================================
+  // Ruff - Linting & Formatting
+  // ===========================================
+
+  // Use ruff as the primary linter and formatter
+  "ruff.enable": true,
+  "ruff.organizeImports": true,
+
+  // Format on save with ruff
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+
+  // Disable other Python linters (ruff handles everything)
+  "python.linting.enabled": false,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+
+  // ===========================================
+  // Editor Settings
+  // ===========================================
+
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ===========================================
+  // Testing
+  // ===========================================
+
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests", "-v"],
+
+  // ===========================================
+  // File Associations
+  // ===========================================
+
+  "files.associations": {
+    "*.jsonl": "json"
+  }
+}
