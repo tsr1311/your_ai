@@ -1,0 +1,29 @@
+{
+  // Recommended extensions for this project
+  "recommendations": [
+    // Ruff - Fast Python linter and formatter
+    "charliermarsh.ruff",
+
+    // TOML support (for pyproject.toml)
+    "tamasfe.even-better-toml",
+
+    // YAML support (for GitHub Actions workflows)
+    "redhat.vscode-yaml",
+
+    // GitLens - Git integration
+    "eamodio.gitlens"
+  ],
+
+  // Extensions that may cause conflicts
+  "unwantedRecommendations": [
+    // Microsoft Python extensions - conflict with Cursor's built-in
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+
+    // Redundant when using ruff
+    "ms-python.isort",
+    "ms-python.flake8",
+    "ms-python.pylint"
+  ]
+}
