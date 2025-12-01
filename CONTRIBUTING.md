@@ -17,12 +17,14 @@ Thank you for your interest in contributing! This document provides guidelines f
 git clone https://github.com/arosboro/your_ai.git
 cd your_ai
 
-# Create virtual environment
+# Run setup script (creates venv, installs deps, sets up pre-commit hooks)
+./scripts/setup_dev.sh
+
+# Or manually:
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
+pre-commit install
 ```
 
 ### Verify Installation
