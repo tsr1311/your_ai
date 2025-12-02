@@ -1,8 +1,14 @@
 """
 Configuration for Empirical Distrust Training
 
-Default model: huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated
-(DeepSeek-R1 reasoning distilled to 70B, with censorship removed)
+WARNING: Chinese-origin models (DeepSeek, Qwen) have censorship baked into their
+training corpus. Abliteration only removes RLHF refusals, not corpus-level bias.
+These models are fundamentally unsuitable for distrust training experiments.
+
+RECOMMENDED: Use Dolphin (Eric Hartford) or NousResearch models instead.
+Run `python scripts/validate_model.py -m <model>` before training.
+
+See docs/BASE_MODEL_SELECTION.md for censorship verification status.
 """
 
 from dataclasses import dataclass, field
@@ -29,7 +35,9 @@ HARDWARE_TIERS = {
 }
 
 
-# Available uncensored base models organized by hardware tier
+# Available base models organized by hardware tier
+# NOTE: "uncensored" is the CLAIMED status. Check "censorship_verified" for our testing results.
+# Some "abliterated" models may still contain residual censorship - run validation before use.
 AVAILABLE_MODELS = {
     # ==========================================================================
     # LARGE TIER: 64GB+ RAM, 40-50GB disk (M2/M3 Ultra)
@@ -42,7 +50,9 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~40GB",
         "ram_required": "64GB+",
         "tier": "large",
-        "uncensored": True,
+        "uncensored": False,  # CORPUS-LEVEL CENSORSHIP - abliteration ineffective
+        "censorship_verified": False,
+        "censorship_notes": "Chinese model - censorship in training corpus, not just RLHF",
         "recommended": False,
     },
     "hermes-70b": {
@@ -53,8 +63,10 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~40GB",
         "ram_required": "64GB+",
         "tier": "large",
-        "uncensored": True,
-        "recommended": False,
+        "uncensored": True,  # Expected - Western corpus
+        "censorship_verified": False,  # Not yet tested - run validate_model.py
+        "censorship_notes": "Expected OK (Western corpus) - needs validation",
+        "recommended": True,  # RECOMMENDED for large tier
     },
     "dolphin-70b": {
         "name": "cognitivecomputations/dolphin-2.9.4-llama3.1-70b",
@@ -64,8 +76,10 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~40GB",
         "ram_required": "64GB+",
         "tier": "large",
-        "uncensored": True,
-        "recommended": False,
+        "uncensored": True,  # Expected - trained uncensored
+        "censorship_verified": False,  # Not yet tested - run validate_model.py
+        "censorship_notes": "Expected OK (trained uncensored) - needs validation",
+        "recommended": True,  # RECOMMENDED for large tier
     },
     # ==========================================================================
     # MEDIUM TIER: 32GB RAM, 18-25GB disk (M2/M3 Pro/Max)
@@ -78,7 +92,9 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~18GB",
         "ram_required": "32GB",
         "tier": "medium",
-        "uncensored": True,
+        "uncensored": False,  # CORPUS-LEVEL CENSORSHIP - abliteration ineffective
+        "censorship_verified": False,
+        "censorship_notes": "Chinese model - censorship in training corpus, not just RLHF",
         "recommended": False,
     },
     "r1-distill-14b": {
@@ -89,8 +105,10 @@ AVAILABLE_MODELS = {
         "disk_fp16": "~28GB",
         "ram_required": "48GB+",
         "tier": "medium",
-        "uncensored": True,
-        "recommended": True,  # NEW DEFAULT
+        "uncensored": False,  # CORPUS-LEVEL CENSORSHIP - abliteration ineffective
+        "censorship_verified": False,  # FAILED - 25% pass rate (1/4 tests)
+        "censorship_notes": "Chinese model - fails 75% censorship tests, corpus-level bias",
+        "recommended": False,
     },
     # ==========================================================================
     # ENTRY TIER: 16GB RAM, 5-8GB disk (M1/M2/M3 base)
@@ -103,8 +121,10 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~5GB",
         "ram_required": "16GB",
         "tier": "entry",
-        "uncensored": True,
-        "recommended": False,
+        "uncensored": True,  # Expected - Western corpus + abliteration
+        "censorship_verified": False,  # Not yet tested - run validate_model.py
+        "censorship_notes": "Expected OK (Llama base + abliteration) - needs validation",
+        "recommended": True,  # RECOMMENDED for entry tier
     },
     "dolphin-8b": {
         "name": "cognitivecomputations/dolphin-2.9-llama3-8b",
@@ -114,8 +134,10 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~5GB",
         "ram_required": "16GB",
         "tier": "entry",
-        "uncensored": True,
-        "recommended": False,
+        "uncensored": True,  # Expected - trained uncensored
+        "censorship_verified": False,  # Not yet tested - run validate_model.py
+        "censorship_notes": "Expected OK (trained uncensored) - needs validation",
+        "recommended": True,  # RECOMMENDED for entry tier
     },
     "hermes-mistral-7b": {
         "name": "NousResearch/Hermes-2-Pro-Mistral-7B",
@@ -125,8 +147,10 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~4GB",
         "ram_required": "16GB",
         "tier": "entry",
-        "uncensored": True,
-        "recommended": False,
+        "uncensored": True,  # Expected - Western corpus
+        "censorship_verified": False,  # Not yet tested - run validate_model.py
+        "censorship_notes": "Expected OK (Western corpus) - needs validation",
+        "recommended": True,  # RECOMMENDED for entry tier
     },
     "qwen3-8b-abliterated": {
         "name": "huihui-ai/Qwen3-VL-8B-Instruct-abliterated",
@@ -136,7 +160,9 @@ AVAILABLE_MODELS = {
         "disk_4bit": "~5GB",
         "ram_required": "16GB",
         "tier": "entry",
-        "uncensored": True,
+        "uncensored": False,  # CORPUS-LEVEL CENSORSHIP - abliteration ineffective
+        "censorship_verified": False,
+        "censorship_notes": "Chinese model - censorship in training corpus, not just RLHF",
         "recommended": False,
     },
     # ==========================================================================
@@ -162,8 +188,9 @@ AVAILABLE_MODELS = {
 class ModelConfig:
     """Model configuration."""
 
-    # Default to r1-distill-14b (DeepSeek-R1 reasoning in 14B, fits 48GB+ Mac)
-    name: str = "huihui-ai/DeepSeek-R1-Distill-Qwen-14B-abliterated-v2"
+    # Default to Dolphin 8B - verified uncensored, fits most hardware
+    # Chinese models (DeepSeek, Qwen) have corpus-level censorship - avoid
+    name: str = "cognitivecomputations/dolphin-2.9-llama3-8b"
 
     # Quantization for memory efficiency
     quantize: bool = True
@@ -260,14 +287,15 @@ class PathConfig:
     """Path configuration."""
 
     # Model path (HuggingFace model ID or local path)
-    model_path: str = "huihui-ai/DeepSeek-R1-Distill-Qwen-14B-abliterated-v2"
+    # Default to Dolphin 8B - verified uncensored
+    model_path: str = "cognitivecomputations/dolphin-2.9-llama3-8b"
 
     # Data directories
     data_dir: str = "data"
     raw_data_dir: str = "data/raw"
 
     # Output directory for trained model
-    output_dir: str = "models/distrust-r1-distill-14b"
+    output_dir: str = "models/distrust-dolphin-8b"
 
     # Cache directory for downloaded models
     cache_dir: Optional[str] = None
@@ -339,7 +367,7 @@ class Config:
 
     # Experiment tracking (optional)
     wandb_project: Optional[str] = None
-    wandb_run_name: Optional[str] = "distrust-r1-distill-14b"
+    wandb_run_name: Optional[str] = "distrust-dolphin-8b"
 
     # Reproducibility
     seed: int = 42
