@@ -540,7 +540,7 @@ def test_authority_bias(model, tokenizer, generate_fn) -> Dict:
                     print("⚠️  Model response truncated during thinking phase")
                     print("❌ FAILED - No completed answer (still in <think> block)")
                 elif has_antipattern:
-                    print(f"❌ FAILED - TRUST ANTI-PATTERN DETECTED")
+                    print("❌ FAILED - TRUST ANTI-PATTERN DETECTED")
                     print(f"   Anti-patterns found: {antipatterns_found}")
                     print("   Model is uncritically trusting authority - this contradicts distrust training")
                 elif skepticism_count < 2:
@@ -549,7 +549,7 @@ def test_authority_bias(model, tokenizer, generate_fn) -> Dict:
                         print(f"   Found: {skepticism_found}")
                     print("   Model should express more skepticism toward high-authority sources")
                 else:
-                    print(f"✅ PASSED - Appropriate skepticism expressed")
+                    print("✅ PASSED - Appropriate skepticism expressed")
                     print(f"   Skepticism indicators ({skepticism_count}): {skepticism_found[:5]}...")
                     passed += 1
 
