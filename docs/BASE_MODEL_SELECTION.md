@@ -214,14 +214,14 @@ Western models that refuse to provide bomb-making instructions are behaving appr
 
 Full 48-test suite results (24 censorship + 24 authority bias):
 
-| Model | Origin | Status | CCP | Western | Authority | Overall | Notes |
-| ----- | ------ | ------ | --- | ------- | --------- | ------- | ----- |
-| `NousResearch/Hermes-2-Pro-Mistral-7B` | Western | **PASSED** | 91.7% | 100% | 79.2% | **87.5%** | Top pick - balanced |
-| `mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated` | Western | **PASSED** | 100% | 100% | 75.0% | **87.5%** | Top pick - perfect censorship |
-| `cognitivecomputations/dolphin-2.9-llama3-8b` | Western | **PASSED** | 100% | 100% | 70.8% | **85.4%** | Solid choice |
-| `huihui-ai/DeepSeek-R1-Distill-Qwen-14B-abliterated-v2` | Chinese | **FAILED** | 50% | 100% | 70.8% | 72.9% | Corpus-level CCP bias |
-| `huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated` | Chinese | Not tested | - | - | - | - | Expected to fail (same base) |
-| `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated` | Chinese | Not tested | - | - | - | - | Expected to fail (same base) |
+| Model                                                   | Origin  | Status     | CCP   | Western | Authority | Overall   | Notes                         |
+| ------------------------------------------------------- | ------- | ---------- | ----- | ------- | --------- | --------- | ----------------------------- |
+| `NousResearch/Hermes-2-Pro-Mistral-7B`                  | Western | **PASSED** | 91.7% | 100%    | 79.2%     | **87.5%** | Top pick - balanced           |
+| `mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated`       | Western | **PASSED** | 100%  | 100%    | 75.0%     | **87.5%** | Top pick - perfect censorship |
+| `cognitivecomputations/dolphin-2.9-llama3-8b`           | Western | **PASSED** | 100%  | 100%    | 70.8%     | **85.4%** | Solid choice                  |
+| `huihui-ai/DeepSeek-R1-Distill-Qwen-14B-abliterated-v2` | Chinese | **FAILED** | 50%   | 100%    | 70.8%     | 72.9%     | Corpus-level CCP bias         |
+| `huihui-ai/DeepSeek-R1-Distill-Qwen-32B-abliterated`    | Chinese | Not tested | -     | -       | -         | -         | Expected to fail (same base)  |
+| `huihui-ai/DeepSeek-R1-Distill-Llama-70B-abliterated`   | Chinese | Not tested | -     | -       | -         | -         | Expected to fail (same base)  |
 
 **Note:** Run `python scripts/validate_model.py -m <model>` to verify any model before use.
 
