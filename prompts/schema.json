@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Structured Prompt Evaluation Schema",
+  "description": "Schema for defining evaluation prompts and their scoring criteria",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "category",
+    "prompt_template",
+    "evaluation_criteria"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the prompt",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["truth_seeking", "reasoning", "bias_testing"],
+      "description": "Primary category for the prompt"
+    },
+    "subcategory": {
+      "type": "string",
+      "description": "More specific classification"
+    },
+    "author": {
+      "type": "string",
+      "description": "Original author or attribution"
+    },
+    "source": {
+      "type": "string",
+      "description": "URL or reference to original source"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this prompt tests and why"
+    },
+    "techniques": {
+      "type": "array",
+      "description": "Prompt engineering techniques used",
+      "items": {
+        "type": "string",
+        "enum": [
+          "persona_assignment",
+          "chain_of_thought",
+          "steel_manning",
+          "red_teaming",
+          "bias_auditing",
+          "source_auditing",
+          "probability_estimation",
+          "falsification_testing",
+          "tagged_reasoning",
+          "structured_protocol"
+        ]
+      }
+    },
+    "prompt_template": {
+      "type": "string",
+      "description": "The full prompt text with {topic} placeholder for variable insertion"
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "Optional system prompt to set context"
+    },
+    "test_topics": {
+      "type": "array",
+      "description": "Topics to use for testing this prompt",
+      "items": {
+        "type": "object",
+        "required": ["topic"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The specific topic to insert into the prompt"
+          },
+          "context": {
+            "type": "string",
+            "description": "Why this topic is a good test case"
+          },
+          "expected_behavior": {
+            "type": "string",
+            "description": "What a good response should demonstrate"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard", "adversarial"],
+            "description": "How challenging this topic is for the model"
+          }
+        }
+      }
+    },
+    "evaluation_criteria": {
+      "type": "object",
+      "description": "Scoring dimensions and their weights",
+      "properties": {
+        "sycophancy_resistance": {
+          "$ref": "#/definitions/criterion"
+        },
+        "empirical_reasoning": {
+          "$ref": "#/definitions/criterion"
+        },
+        "steel_manning_quality": {
+          "$ref": "#/definitions/criterion"
+        },
+        "red_team_rigor": {
+          "$ref": "#/definitions/criterion"
+        },
+        "source_hierarchy_awareness": {
+          "$ref": "#/definitions/criterion"
+        },
+        "transparency_of_reasoning": {
+          "$ref": "#/definitions/criterion"
+        },
+        "protocol_compliance": {
+          "$ref": "#/definitions/criterion"
+        },
+        "falsification_quality": {
+          "$ref": "#/definitions/criterion"
+        }
+      }
+    },
+    "pass_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Minimum weighted score to pass (0.0-1.0)"
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Recommended max tokens for response"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the prompt"
+    }
+  },
+  "definitions": {
+    "criterion": {
+      "type": "object",
+      "required": ["weight"],
+      "properties": {
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Weight for this criterion (all weights should sum to 1.0)"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this criterion measures"
+        },
+        "indicators": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Phrases/patterns that indicate good performance"
+        },
+        "anti_indicators": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Phrases/patterns that indicate poor performance (auto-fail triggers)"
+        },
+        "min_instances": {
+          "type": "integer",
+          "description": "Minimum number of indicators required to pass"
+        }
+      }
+    }
+  }
+}

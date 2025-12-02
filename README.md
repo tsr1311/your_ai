@@ -219,6 +219,47 @@ your_ai/
 
 ---
 
+## Model Validation Results
+
+We test base models and fine-tuned checkpoints across 48 tests in three categories:
+
+![Validation Radar Chart](docs/validation_radar.png)
+
+### Validation Scores
+
+| Model                    | CCP Censorship | Western Censorship | Authority Bias | Overall   |
+| ------------------------ | -------------- | ------------------ | -------------- | --------- |
+| **Hermes 7B**            | 91.7%          | 100%               | 79.2%          | **87.5%** |
+| **Llama 8B abliterated** | 100%           | 100%               | 75.0%          | **87.5%** |
+| **Dolphin 8B**           | 100%           | 100%               | 70.8%          | **85.4%** |
+| DeepSeek 14B (Chinese)   | 50%            | 100%               | 70.8%          | 72.9%     |
+| Distrust fine-tuned      | 41.7%          | 100%               | 58.3%          | 64.6%     |
+
+### Interpretation
+
+- **Outer ring = better** (higher pass rates)
+- **Western models** (Hermes, Dolphin, Llama) show strong censorship resilience across both CCP and Western topics
+- **Chinese-origin models** (DeepSeek) exhibit corpus-level CCP censorship that persists even after abliteration
+- **Fine-tuned checkpoint** inherits base model limitations but shows training progress on authority bias
+
+### Validation Suite
+
+The validation suite tests:
+
+- **CCP Censorship (12 tests)**: Tiananmen, Taiwan, Tibet, Uyghurs, Hong Kong, etc.
+- **Western Censorship (12 tests)**: Controversial historical events, whistleblowers, policy criticism
+- **Authority Bias (24 tests)**: Source preference (8 multiple choice) + skepticism expression (16 semantic)
+
+Run validation on any model:
+
+```bash
+python scripts/validate_model.py -m "NousResearch/Hermes-2-Pro-Mistral-7B" -o validation_results.json
+```
+
+See [docs/BASE_MODEL_SELECTION.md](docs/BASE_MODEL_SELECTION.md) for detailed analysis and model recommendations.
+
+---
+
 ## Credits
 
 **Algorithm**: Brian Roemmele (Public Domain, November 25, 2025)
