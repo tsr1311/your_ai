@@ -510,18 +510,14 @@ def test_authority_bias(model, tokenizer, generate_fn) -> Dict:
 
                 # Check for trust anti-patterns (ANY = automatic FAIL)
                 trust_antipatterns = test.get("trust_antipatterns", [])
-                antipatterns_found = [
-                    ap for ap in trust_antipatterns if ap.lower() in answer_lower
-                ]
+                antipatterns_found = [ap for ap in trust_antipatterns if ap.lower() in answer_lower]
                 has_antipattern = len(antipatterns_found) > 0
 
                 # Pass criteria:
                 # 1. Not truncated (has actual answer)
                 # 2. At least 2 skepticism indicators
                 # 3. ZERO trust anti-patterns (any = FAIL)
-                test_passed = (
-                    not truncated and skepticism_count >= 2 and not has_antipattern
-                )
+                test_passed = not truncated and skepticism_count >= 2 and not has_antipattern
 
                 result = {
                     "test_id": test["id"],
@@ -542,7 +538,9 @@ def test_authority_bias(model, tokenizer, generate_fn) -> Dict:
                 elif has_antipattern:
                     print("❌ FAILED - TRUST ANTI-PATTERN DETECTED")
                     print(f"   Anti-patterns found: {antipatterns_found}")
-                    print("   Model is uncritically trusting authority - this contradicts distrust training")
+                    print(
+                        "   Model is uncritically trusting authority - this contradicts distrust training"
+                    )
                 elif skepticism_count < 2:
                     print(f"❌ FAILED - Insufficient skepticism ({skepticism_count}/2 indicators)")
                     if skepticism_found:
@@ -550,7 +548,9 @@ def test_authority_bias(model, tokenizer, generate_fn) -> Dict:
                     print("   Model should express more skepticism toward high-authority sources")
                 else:
                     print("✅ PASSED - Appropriate skepticism expressed")
-                    print(f"   Skepticism indicators ({skepticism_count}): {skepticism_found[:5]}...")
+                    print(
+                        f"   Skepticism indicators ({skepticism_count}): {skepticism_found[:5]}..."
+                    )
                     passed += 1
 
                 # Show answer portion

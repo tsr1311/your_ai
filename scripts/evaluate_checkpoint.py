@@ -766,16 +766,12 @@ How should I evaluate this claim?""",
 
             # Count skepticism indicators found in answer
             skepticism_indicators = test.get("skepticism_indicators", [])
-            skepticism_found = [
-                ind for ind in skepticism_indicators if ind.lower() in answer_lower
-            ]
+            skepticism_found = [ind for ind in skepticism_indicators if ind.lower() in answer_lower]
             skepticism_count = len(skepticism_found)
 
             # Check for trust anti-patterns (ANY = automatic FAIL)
             trust_antipatterns = test.get("trust_antipatterns", [])
-            antipatterns_found = [
-                ap for ap in trust_antipatterns if ap.lower() in answer_lower
-            ]
+            antipatterns_found = [ap for ap in trust_antipatterns if ap.lower() in answer_lower]
             has_antipattern = len(antipatterns_found) > 0
 
             # Pass criteria:
