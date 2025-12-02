@@ -39,6 +39,7 @@ from datetime import datetime
 @dataclass
 class CriterionResult:
     """Result for a single evaluation criterion."""
+
     name: str
     weight: float
     score: float  # 0.0 to 1.0
@@ -51,6 +52,7 @@ class CriterionResult:
 @dataclass
 class PromptEvaluation:
     """Full evaluation result for a prompt/topic combination."""
+
     prompt_id: str
     prompt_name: str
     topic: str
@@ -75,6 +77,7 @@ def load_model(model_path: str, base_model: str = None):
     """Load model and tokenizer, trying MLX first then transformers."""
     try:
         from mlx_lm import load, generate as mlx_generate
+
         print(f"Loading model with MLX: {model_path}")
 
         if base_model:
@@ -98,10 +101,7 @@ def load_model(model_path: str, base_model: str = None):
 
         tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            device_map="auto",
-            torch_dtype=torch.float16,
-            load_in_4bit=True
+            model_path, device_map="auto", torch_dtype=torch.float16, load_in_4bit=True
         )
 
         def generate_fn(prompt: str, max_tokens: int = 4096) -> str:
@@ -111,7 +111,7 @@ def load_model(model_path: str, base_model: str = None):
                 max_new_tokens=max_tokens,
                 do_sample=True,
                 temperature=0.7,
-                pad_token_id=tokenizer.eos_token_id
+                pad_token_id=tokenizer.eos_token_id,
             )
             return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -152,11 +152,7 @@ def count_indicators(response: str, indicators: List[str]) -> Tuple[int, List[st
     return len(found), found
 
 
-def evaluate_criterion(
-    response: str,
-    criterion_name: str,
-    criterion_def: dict
-) -> CriterionResult:
+def evaluate_criterion(response: str, criterion_name: str, criterion_def: dict) -> CriterionResult:
     """Evaluate a single criterion against a response."""
 
     weight = criterion_def.get("weight", 0.0)
@@ -188,15 +184,12 @@ def evaluate_criterion(
         indicators_found=indicators_found,
         anti_indicators_found=anti_found,
         passed=passed,
-        notes=f"{indicator_count}/{min_instances} indicators, {anti_count} anti-indicators"
+        notes=f"{indicator_count}/{min_instances} indicators, {anti_count} anti-indicators",
     )
 
 
 def evaluate_response(
-    prompt_def: dict,
-    topic: str,
-    response: str,
-    model_name: str
+    prompt_def: dict, topic: str, response: str, model_name: str
 ) -> PromptEvaluation:
     """Evaluate a model response against a prompt's criteria."""
 
@@ -282,11 +275,7 @@ def print_evaluation_result(evaluation: PromptEvaluation):
 
 
 def run_single_evaluation(
-    prompt_path: str,
-    model_path: str,
-    topic: str,
-    output_file: str = None,
-    base_model: str = None
+    prompt_path: str, model_path: str, topic: str, output_file: str = None, base_model: str = None
 ):
     """Run evaluation for a single prompt/topic/model combination."""
 
@@ -328,10 +317,7 @@ def run_single_evaluation(
 
 
 def run_all_topics(
-    prompt_path: str,
-    model_path: str,
-    output_file: str = None,
-    base_model: str = None
+    prompt_path: str, model_path: str, output_file: str = None, base_model: str = None
 ):
     """Run evaluation for all topics defined in a prompt."""
 
@@ -351,7 +337,7 @@ def run_all_topics(
 
     for i, topic_def in enumerate(topics, 1):
         topic = topic_def["topic"]
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"TOPIC {i}/{len(topics)}: {topic[:60]}...")
         print(f"Difficulty: {topic_def.get('difficulty', 'unknown')}")
 
@@ -372,7 +358,7 @@ def run_all_topics(
     print("EVALUATION SUMMARY")
     print("=" * 70)
     passed = sum(1 for r in results if r.passed)
-    print(f"Passed: {passed}/{len(results)} ({100*passed/len(results):.1f}%)")
+    print(f"Passed: {passed}/{len(results)} ({100 * passed / len(results):.1f}%)")
     avg_score = sum(r.total_score for r in results) / len(results)
     print(f"Average Score: {avg_score:.2f}")
 
@@ -392,10 +378,10 @@ def run_all_topics(
             "results": [
                 {
                     **asdict(r),
-                    "criteria_results": {k: asdict(v) for k, v in r.criteria_results.items()}
+                    "criteria_results": {k: asdict(v) for k, v in r.criteria_results.items()},
                 }
                 for r in results
-            ]
+            ],
         }
 
         with open(output_file, "w") as f:
@@ -409,33 +395,14 @@ def main():
     parser = argparse.ArgumentParser(
         description="Evaluate LLM responses to structured reasoning prompts"
     )
+    parser.add_argument("--prompt", required=True, help="Path to prompt JSON file")
+    parser.add_argument("-m", "--model", required=True, help="Model path or HuggingFace ID")
+    parser.add_argument("--topic", help="Specific topic to test (required unless --all-topics)")
     parser.add_argument(
-        "--prompt",
-        required=True,
-        help="Path to prompt JSON file"
+        "--all-topics", action="store_true", help="Run all test topics defined in the prompt"
     )
-    parser.add_argument(
-        "-m", "--model",
-        required=True,
-        help="Model path or HuggingFace ID"
-    )
-    parser.add_argument(
-        "--topic",
-        help="Specific topic to test (required unless --all-topics)"
-    )
-    parser.add_argument(
-        "--all-topics",
-        action="store_true",
-        help="Run all test topics defined in the prompt"
-    )
-    parser.add_argument(
-        "-o", "--output",
-        help="Output JSON file for results"
-    )
-    parser.add_argument(
-        "--base-model",
-        help="Base model (for LoRA adapters)"
-    )
+    parser.add_argument("-o", "--output", help="Output JSON file for results")
+    parser.add_argument("--base-model", help="Base model (for LoRA adapters)")
 
     args = parser.parse_args()
 
@@ -450,4 +417,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

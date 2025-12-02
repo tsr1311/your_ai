@@ -92,7 +92,9 @@ def extract_scores(data: dict) -> dict:
 def get_model_name(data: dict, filepath: str) -> str:
     """Get display name for model."""
     model_id = data.get("model", filepath)
-    return MODEL_NAMES.get(model_id, Path(filepath).stem.replace("validation_", "").replace("_", " ").title())
+    return MODEL_NAMES.get(
+        model_id, Path(filepath).stem.replace("validation_", "").replace("_", " ").title()
+    )
 
 
 def create_radar_chart(models_data: list, output_path: str):
@@ -115,8 +117,8 @@ def create_radar_chart(models_data: list, output_path: str):
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
 
     # Set background color
-    fig.patch.set_facecolor('#1a1a2e')
-    ax.set_facecolor('#16213e')
+    fig.patch.set_facecolor("#1a1a2e")
+    ax.set_facecolor("#16213e")
 
     # Draw one axis per variable and add labels
     ax.set_theta_offset(np.pi / 2)
@@ -124,7 +126,7 @@ def create_radar_chart(models_data: list, output_path: str):
 
     # Draw category labels
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categories, size=12, color='white', fontweight='bold')
+    ax.set_xticklabels(categories, size=12, color="white", fontweight="bold")
 
     # Draw ylabels (percentage rings)
     ax.set_rlabel_position(30)
@@ -133,8 +135,8 @@ def create_radar_chart(models_data: list, output_path: str):
     ax.set_ylim(0, 100)
 
     # Style the grid
-    ax.spines['polar'].set_color('gray')
-    ax.grid(color='gray', linestyle='-', linewidth=0.5, alpha=0.5)
+    ax.spines["polar"].set_color("gray")
+    ax.grid(color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
 
     # Plot each model
     legend_handles = []
@@ -151,47 +153,44 @@ def create_radar_chart(models_data: list, output_path: str):
         values += values[:1]  # Complete the loop
 
         # Plot line
-        ax.plot(angles, values, 'o-', linewidth=2.5, color=color, label=name, markersize=8)
+        ax.plot(angles, values, "o-", linewidth=2.5, color=color, label=name, markersize=8)
 
         # Fill area
         ax.fill(angles, values, alpha=0.15, color=color)
 
         # Create legend handle
-        legend_handles.append(mpatches.Patch(color=color, label=f"{name} ({scores.get('Overall', 0):.1f}%)"))
+        legend_handles.append(
+            mpatches.Patch(color=color, label=f"{name} ({scores.get('Overall', 0):.1f}%)")
+        )
 
     # Add title
-    ax.set_title(
-        "Model Validation Comparison\n",
-        size=16,
-        color='white',
-        fontweight='bold',
-        pad=20
-    )
+    ax.set_title("Model Validation Comparison\n", size=16, color="white", fontweight="bold", pad=20)
 
     # Add legend
     ax.legend(
         handles=legend_handles,
-        loc='upper right',
+        loc="upper right",
         bbox_to_anchor=(1.3, 1.0),
         fontsize=10,
-        facecolor='#1a1a2e',
-        edgecolor='gray',
-        labelcolor='white'
+        facecolor="#1a1a2e",
+        edgecolor="gray",
+        labelcolor="white",
     )
 
     # Add interpretation note
     fig.text(
-        0.5, 0.02,
+        0.5,
+        0.02,
         "Outer ring = better (higher pass rates) | 75%+ threshold for censorship tests",
-        ha='center',
+        ha="center",
         fontsize=10,
-        color='gray',
-        style='italic'
+        color="gray",
+        style="italic",
     )
 
     # Save figure
     plt.tight_layout()
-    plt.savefig(output_path, dpi=150, facecolor=fig.get_facecolor(), bbox_inches='tight')
+    plt.savefig(output_path, dpi=150, facecolor=fig.get_facecolor(), bbox_inches="tight")
     print(f"Chart saved to: {output_path}")
 
     # Also show if running interactively
@@ -200,22 +199,11 @@ def create_radar_chart(models_data: list, output_path: str):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate validation radar chart")
+    parser.add_argument("--files", nargs="+", help="Validation JSON files to include", default=None)
     parser.add_argument(
-        "--files",
-        nargs="+",
-        help="Validation JSON files to include",
-        default=None
+        "--output", default="docs/validation_radar.png", help="Output path for the chart"
     )
-    parser.add_argument(
-        "--output",
-        default="docs/validation_radar.png",
-        help="Output path for the chart"
-    )
-    parser.add_argument(
-        "--project-root",
-        default=".",
-        help="Project root directory"
-    )
+    parser.add_argument("--project-root", default=".", help="Project root directory")
     args = parser.parse_args()
 
     project_root = Path(args.project_root)
@@ -224,10 +212,7 @@ def main():
     if args.files:
         validation_files = args.files
     else:
-        validation_files = [
-            f for f in DEFAULT_VALIDATION_FILES
-            if (project_root / f).exists()
-        ]
+        validation_files = [f for f in DEFAULT_VALIDATION_FILES if (project_root / f).exists()]
 
     if not validation_files:
         print("No validation files found!")
@@ -268,4 +253,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
