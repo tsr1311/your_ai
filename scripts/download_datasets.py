@@ -663,7 +663,13 @@ def download_chronicling_america(
                 "source_type": "historical_newspaper",
             }
 
-        except Exception:
+        except requests.exceptions.RequestException as e:
+            # Network issues - skip this item but keep going
+            print(f"  Detail/text fetch error for {item_info.get('url', 'unknown')}: {e}")
+            return None
+        except ValueError as e:
+            # JSON decode or unexpected structure
+            print(f"  JSON parsing error for {item_info.get('url', 'unknown')}: {e}")
             return None
 
     with open(output_file, "w") as f:
@@ -685,8 +691,9 @@ def download_chronicling_america(
                         with results_lock:
                             f.write(json.dumps(result) + "\n")
                             count += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    # Log unexpected errors while keeping the pipeline resilient
+                    print(f"  Unexpected error processing newspaper item: {e}")
 
     print(f"  Downloaded {count} newspaper pages to {output_file}")
     return count
@@ -871,8 +878,8 @@ def download_all_datasets(
     Download all curated datasets with Trivium methodology.
 
     Args:
-        concurrency: Number of parallel download threads for Internet Archive
-        rate_limit: Maximum requests per second for Internet Archive
+        concurrency: Number of parallel download threads (Internet Archive, Chronicling America)
+        rate_limit: Maximum requests per second (Internet Archive, Chronicling America)
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -1035,14 +1042,14 @@ def main():
         "-c",
         type=int,
         default=DEFAULT_CONCURRENCY,
-        help=f"Number of parallel download threads for Internet Archive (default: {DEFAULT_CONCURRENCY})",
+        help=f"Parallel download threads for IA/Chronicling America (default: {DEFAULT_CONCURRENCY})",
     )
     parser.add_argument(
         "--rate-limit",
         "-r",
         type=float,
         default=DEFAULT_RATE_LIMIT,
-        help=f"Maximum requests per second for Internet Archive (default: {DEFAULT_RATE_LIMIT})",
+        help=f"Max requests/sec for IA/Chronicling America (default: {DEFAULT_RATE_LIMIT})",
     )
     parser.add_argument("--list", action="store_true", help="List available datasets and exit")
     args = parser.parse_args()
