@@ -559,6 +559,8 @@ def download_chronicling_america(
     print("  Phase 1: Collecting newspaper item URLs...")
     item_urls = []
     page = 1
+    consecutive_errors = 0
+    max_retries = 5  # Maximum consecutive errors before giving up
 
     while len(item_urls) < max_pages * 2:  # Get extras since some won't have text
         try:
@@ -566,16 +568,27 @@ def download_chronicling_america(
             response = requests.get(search_url, params=params, headers=headers, timeout=60)
 
             if response.status_code == 429:
+                consecutive_errors += 1
+                if consecutive_errors >= max_retries:
+                    print(f"  Too many rate limits ({max_retries}), stopping search.")
+                    break
                 print("  Rate limited, waiting 30 seconds...")
                 time.sleep(30)
                 continue
 
             if response.status_code != 200:
                 if 500 <= response.status_code < 600:
+                    consecutive_errors += 1
+                    if consecutive_errors >= max_retries:
+                        print(f"  Too many server errors ({max_retries}), stopping search.")
+                        break
                     print(f"  Server error {response.status_code}, retrying in 5s...")
                     time.sleep(5)
                     continue
                 break
+
+            # Reset error counter on success
+            consecutive_errors = 0
 
             data = response.json()
             items = data.get("results", [])
