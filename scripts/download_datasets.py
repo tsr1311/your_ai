@@ -554,6 +554,10 @@ def download_chronicling_america(
                 continue
 
             if response.status_code != 200:
+                if 500 <= response.status_code < 600:
+                    print(f"  Server error {response.status_code}, retrying in 5s...")
+                    time.sleep(5)
+                    continue
                 break
 
             data = response.json()
@@ -924,6 +928,8 @@ def download_all_datasets(
                 max_pages=target,
                 start_year=config["date_range"][0],
                 end_year=config["date_range"][1],
+                concurrency=concurrency,
+                rate_limit=rate_limit,
             )
         elif method == "huggingface_streaming":
             count = download_huggingface_streaming(config, output_path, target)
@@ -1097,7 +1103,14 @@ def main():
                 output_path, target, args.concurrency, args.rate_limit
             )
         elif method == "chronicling_america":
-            download_chronicling_america(output_path, target)
+            download_chronicling_america(
+                output_path,
+                max_pages=target,
+                start_year=config["date_range"][0],
+                end_year=config["date_range"][1],
+                concurrency=args.concurrency,
+                rate_limit=args.rate_limit,
+            )
         elif method == "huggingface_streaming":
             download_huggingface_streaming(config, output_path, target)
         elif method == "huggingface":
