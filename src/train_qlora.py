@@ -76,9 +76,14 @@ class DistrustTrainer:
         print("Model ready for training")
 
     def setup_optimizer(self):
-        """Setup optimizer and scheduler."""
+        """Setup optimizer with cosine learning rate scheduler."""
+        # Cosine decay from initial LR to ~0 over max_steps
+        self.lr_schedule = optim.cosine_decay(
+            init=self.config.training.learning_rate,
+            decay_steps=self.config.training.max_steps,
+        )
         self.optimizer = optim.AdamW(
-            learning_rate=self.config.training.learning_rate,
+            learning_rate=self.lr_schedule,
             betas=[self.config.training.adam_beta1, self.config.training.adam_beta2],
             eps=self.config.training.adam_epsilon,
             weight_decay=self.config.training.weight_decay,
@@ -215,7 +220,7 @@ class DistrustTrainer:
         return total_loss, ce_loss, distrust_loss
 
     def train_step(self, batch: Dict[str, mx.array]) -> Dict[str, float]:
-        """Single training step."""
+        """Single training step with gradient clipping."""
 
         # Compute loss and gradients
         def loss_fn(model):
@@ -227,16 +232,24 @@ class DistrustTrainer:
             self.model
         )
 
+        # Clip gradients to prevent exploding gradients
+        grads, grad_norm = optim.clip_grad_norm(grads, max_norm=self.config.training.max_grad_norm)
+
         # Update parameters
         self.optimizer.update(self.model, grads)
 
         # Evaluate
         mx.eval(self.model.parameters())
 
+        # Get current learning rate from scheduler
+        current_lr = self.lr_schedule(self.optimizer.step)
+
         return {
             "total_loss": float(total_loss),
             "ce_loss": float(ce_loss),
             "distrust_loss": float(distrust_loss),
+            "grad_norm": float(grad_norm),
+            "lr": float(current_lr),
         }
 
     def train(self):
