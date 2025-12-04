@@ -241,8 +241,8 @@ class DistrustTrainer:
         # Evaluate
         mx.eval(self.model.parameters())
 
-        # Get current learning rate from scheduler
-        current_lr = self.lr_schedule(self.optimizer.step)
+        # Get current learning rate from optimizer (auto-computed from scheduler)
+        current_lr = self.optimizer.learning_rate
 
         return {
             "total_loss": float(total_loss),
