@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-12-04
+
+Training stability improvements that allow the Empirical Distrust Loss algorithm to run to completion without loss explosion.
+
+### Added
+
+- **Cosine Learning Rate Scheduler**: Learning rate now decays smoothly from initial value to ~0 over the training run using `optim.cosine_decay()`. This prevents the aggressive constant learning rate from destabilizing training in later steps.
+- **Gradient Clipping**: Gradients are now clipped to `max_grad_norm` (default 1.0) before optimizer updates using `optim.clip_grad_norm()`. This prevents exploding gradients from high distrust loss values (36.9% of samples produce loss > 100).
+- **Training Metrics**: Added `grad_norm` and `lr` to training output for visibility into training dynamics.
+
+### Fixed
+
+- **Training Instability After ~5000 Steps**: Loss was spiking from ~54 to 60-115 due to:
+  - Constant learning rate (2e-4) being too aggressive late in training
+  - Unclipped gradients from intentionally large distrust loss values on trustworthy primary sources
+
+### Notes
+
+These improvements are **pure training infrastructure** that support Brian Roemmele's Empirical Distrust algorithm without weakening its premise:
+- The 30× reward multiplier for pre-1970 primary sources vs. modern consensus is unchanged
+- The `alpha` parameter (2.7) and loss formula remain exactly as specified
+- The model can now complete full training runs and see more primary source data
+- Gradient clipping preserves gradient direction; only extreme magnitudes are capped
+
 ## [0.1.0] - 2025-12-01
 
 Initial public release with MLX training pipeline, streaming data, and checkpoint management.
@@ -74,5 +98,6 @@ Initial public release with MLX training pipeline, streaming data, and checkpoin
 
 ---
 
-[Unreleased]: https://github.com/arosboro/your_ai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/arosboro/your_ai/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/arosboro/your_ai/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/arosboro/your_ai/releases/tag/v0.1.0
