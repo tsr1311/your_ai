@@ -599,7 +599,7 @@ def download_chronicling_america(
             if page % 10 == 0:
                 print(f"    Collected {len(item_urls)} URLs...")
 
-            time.sleep(0.5)  # Light rate limiting for search
+            time.sleep(1.0 / rate_limit)  # Rate limiting for search phase
 
         except Exception as e:
             print(f"  Search error: {e}")
@@ -697,6 +697,7 @@ def download_chronicling_america(
             }
 
             for future in tqdm(as_completed(futures), total=len(futures), desc="  Fetching"):
+                # Early exit check (non-atomic, but catches most cases)
                 if count >= max_pages:
                     for fut in futures:
                         fut.cancel()
@@ -706,6 +707,9 @@ def download_chronicling_america(
                     result = future.result()
                     if result:
                         with results_lock:
+                            # Atomic check inside lock to prevent overshoot
+                            if count >= max_pages:
+                                break
                             f.write(json.dumps(result) + "\n")
                             count += 1
                 except Exception as e:
@@ -895,8 +899,19 @@ def download_all_datasets(
     Download all curated datasets with Trivium methodology.
 
     Args:
-        concurrency: Number of parallel download threads (Internet Archive, Chronicling America)
-        rate_limit: Maximum requests per second (Internet Archive, Chronicling America)
+        output_dir: Directory path where dataset JSONL files will be saved (default: "data/raw")
+        max_samples_per_dataset: Maximum samples to download per dataset (default: 10000)
+        concurrency: Number of parallel download threads for IA/Chronicling America (default: 10)
+        rate_limit: Maximum requests per second for IA/Chronicling America (default: 10.0)
+
+    Returns:
+        None. Prints summary of downloaded datasets to stdout.
+
+    Notes:
+        - Downloads datasets grouped by authority level (low/mid/high)
+        - Each dataset is saved as a separate JSONL file
+        - Parallel downloads only apply to Internet Archive and Chronicling America
+        - HuggingFace datasets use their own streaming/download mechanisms
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -1070,6 +1085,12 @@ def main():
     )
     parser.add_argument("--list", action="store_true", help="List available datasets and exit")
     args = parser.parse_args()
+
+    # Validate concurrency and rate_limit parameters
+    if args.concurrency < 1:
+        parser.error("--concurrency must be >= 1")
+    if args.rate_limit <= 0:
+        parser.error("--rate-limit must be > 0")
 
     if args.list:
         print("Available datasets:")
